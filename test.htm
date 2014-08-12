@@ -1,0 +1,18 @@
+<html>
+  <head>
+    <script src="amd.js"></script>
+    <script>
+      window.onload = function(){
+      	require(["./binReader", "./levReader", "./levRender"], function(binReader, levReader, levRender){
+      		window.l = {
+      			binReader: binReader,
+      			levReader: levReader,
+      			levRender: levRender
+      		};
+      	});
+      }
+    </script>
+  </head>
+  <body>
+  </body>
+</html>
