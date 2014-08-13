@@ -112,7 +112,7 @@ define(["./binReader"], function(binReader){
 						br.seek(pos);
 						forEachPoly(grass != 0, vcount, function(forEachVertex){
 							for(var y = 0; y < vcount; y++){
-								br.seek(pos + 4 + 4 + y*(8 + 8));
+								br.seek(pos + y*(8 + 8));
 								forEachVertex(br.binFloat64le(), br.binFloat64le());
 							}
 						});

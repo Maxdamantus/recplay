@@ -1,14 +1,25 @@
 <html>
   <head>
+    <style>
+      canvas {
+      	border: 1px solid;
+      }
+    </style>
     <script src="amd.js"></script>
     <script>
       window.onload = function(){
-      	require(["./binReader", "./levReader", "./levRender"], function(binReader, levReader, levRender){
+      	require(["./binReader", "./levReader", "./levRender", "./Smibu80"], function(binReader, levReader, levRender, glide005){
       		window.l = {
       			binReader: binReader,
       			levReader: levReader,
       			levRender: levRender
       		};
+      		var canvase = document.body.appendChild(document.createElement("canvas"));
+      		canvase.width = "1920";
+      		canvase.height = "1080";
+      		var canvas = canvase.getContext("2d");
+      		var lr = levRender(levReader(glide005));
+      		lr(canvas);
       	});
       }
     </script>
