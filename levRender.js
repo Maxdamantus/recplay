@@ -79,14 +79,7 @@ define([], function(){
 				var offsY = y >= 0? py%blockH : blockH - -py%blockH;
 				canv.save();
 					canv.translate(-blockW - offsX, -blockH - offsY);
-					canv.scale(blockW, blockH);
-					for(var xb = 0; xb < pw/blockW + 2; xb++)
-						for(var yb = 0; yb < ph/blockH + 2; yb++){
-							canv.save();
-								canv.translate(xb, yb);
-								lgr.ground(canv);
-							canv.restore();
-						}
+					lgr.ground.repeat(canv, pw + blockW*2, ph + blockH*2);
 				canv.restore();
 			}();
 
@@ -101,14 +94,87 @@ define([], function(){
 			canv.globalCompositeOperation = "destination-out";
 			canv.fill();
 			canv.restore();
+
+			canv.strokeStyle = "#ff0000";
+			canv.strokeRect(0, 0, w*scale, h*scale);
 		};
 
-		function cache(mkCanv){
-			
+		// assumes widths and heights are positive
+		function rectsOverlap(x1, y1, w1, h1, x2, y2, w2, h2){
+			return ( // parentheses required! ASI!
+				x1 + w1 >= x2 &&
+				y1 + h1 >= y2 &&
+				x2 + w2 >= x1 &&
+				y2 + h2 >= y1);
+		}
+
+		function cached(num, mkCanv){
+			var cscale, xp, yp, wp, hp;
+			var canvs = [], lgr;
+
+			function update(which, canv){
+				var x = which%num, y = Math.floor(which/num);
+				x = xp + x*wp;
+				y = yp + y*hp;
+				draw(canv.getContext("2d"), lgr, x/cscale, y/cscale, wp/cscale, hp/cscale, cscale);
+			}
+
+			return function cachedDraw(canv, lgr_, x, y, w, h, scale){
+				lgr = lgr_; // meh, no invalidation
+				w = Math.ceil(w*scale);
+				h = Math.ceil(h*scale);
+				x = Math.floor(x*scale);
+				y = Math.floor(y*scale);
+				if(scale != cscale || Math.ceil(w/(num - 1)) != wp || Math.ceil(h/(num - 1)) != hp || !rectsOverlap(xp, yp, wp*num, hp*num, x, y, w, h)){
+					wp = Math.ceil(w/(num - 1));
+					hp = Math.ceil(h/(num - 1));
+					xp = x - Math.floor(wp/2);
+					yp = y - Math.floor(hp/2);
+					cscale = scale;
+					canvs = [];
+					for(var z = 0; z < num*num; z++)
+						update(z, canvs[z] = mkCanv(wp, hp));
+				}
+				// TODO: will render things unnecessarily if it jumps a whole column/row
+				// doesn't matter when num == 2
+				// should try to generalise this—whole thing looks unreadable
+				while(yp > y){ // stuff missing from top
+					yp -= hp;
+					canvs.splice.apply(canvs, [0, 0].concat(canvs.splice(num*(num - 1), num)));
+					for(var z = 0; z < num; z++)
+						update(z, canvs[z]);
+				}
+				while(yp + num*hp < y + h){ // stuff missing from bottom
+					yp += hp;
+					canvs.splice.apply(canvs, [num*(num - 1), 0].concat(canvs.splice(0, num)));
+					for(var z = 0; z < num; z++)
+						update(num*(num - 1) + z, canvs[num*(num - 1) + z]);
+				}
+				while(xp > x){ // stuff missing from left
+					xp -= wp;
+					for(var z = 0; z < num; z++){
+						canvs.splice(z*num, 0, canvs.splice((z + 1)*num - 1, 1)[0]);
+						update(z*num, canvs[z*num]);
+					}
+				}
+				while(xp + num*wp < x + w){ // stuff missing from right
+					xp += wp;
+					for(var z = 0; z < num; z++){
+						canvs.splice((z + 1)*num - 1, 0, canvs.splice(z*num, 1)[0]);
+						update((z + 1)*num - 1, canvs[(z + 1)*num - 1]);
+					}
+				}
+
+				for(var xi = 0; xi < num; xi++)
+					for(var yi = 0; yi < num; yi++)
+						canv.drawImage(canvs[yi*num + xi], xp - x + xi*wp, yp - y + yi*hp);
+
+			};
 		}
 
 		return {
-			draw: draw
+			draw: draw,
+			cached: cached
 		};
 	};
 });

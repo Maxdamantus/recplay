@@ -14,6 +14,12 @@ define([], function(){
 			return data.charCodeAt(pos++);
 		}
 
+		function unbyte(){
+			if(pos < 0)
+				throw new Error("out of range");
+			return data.charCodeAt(pos--);
+		}
+
 		function seq(n){
 			if(pos + n > data.length)
 				throw new Error("out of range");
@@ -25,46 +31,42 @@ define([], function(){
 			pos += n;
 		}
 
-		function binFloat64be(){
+		function binFloat64le(){
 			var sign, exp, mant, b;
 
-			b = byte();
+			skip(7);
+			b = unbyte();
 			sign = b >> 7;
 			exp = b & 127;
-			b = byte();
+			b = unbyte();
 			exp <<= 4;
 			exp |= b >> 4;
 			mant = b & 15;
 			for(b = 0; b < 6; b++){
 				mant *= 1 << 8;
-				mant += byte();
+				mant += unbyte();
 			}
+			skip(9);
 			return (sign? -1 : 1)*Math.pow(2, exp - 1023)*(1 + mant*Math.pow(2, -52));
 		}
 
-		function binFloat64le(){
-			return binReader(seq(8).split("").reverse().join("")).binFloat64be();
-		}
-
-		function binFloat32be(){
+		function binFloat32le(){
 			var sign, exp, mant, b;
 
-			b = byte();
+			skip(3);
+			b = unbyte();
 			sign = b >> 7;
 			exp = b & 127;
-			b = byte();
+			b = unbyte();
 			exp <<= 1;
 			exp |= b >> 7;
 			mant = b & 127;
 			for(b = 0; b < 2; b++){
 				mant *= 1 << 8;
-				mant += byte();
+				mant += unbyte();
 			}
+			skip(5);
 			return (sign? -1 : 1)*Math.pow(2, exp - 127)*(1 + mant*Math.pow(2, -23));
-		}
-
-		function binFloat32le(){
-			return binReader(seq(4).split("").reverse().join("")).binFloat32be();
 		}
 
 		function word32le(){
@@ -108,10 +110,8 @@ define([], function(){
 			byte: byte,
 			seq: seq,
 			skip: skip,
-			binFloat64be: binFloat64be,
 			binFloat64le: binFloat64le,
 			binFloat32le: binFloat32le,
-			binFloat32be: binFloat32be,
 			word32le: word32le,
 			word16le: word16le,
 			int32le: int32le,
