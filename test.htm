@@ -21,8 +21,13 @@
       		var lgrO = lgr("../../images");
       		get("Smibu80.lev", function(lev){
       		get("smibu80meh1344.rec", function(rec){
-      			var lr = levRender(window.lrd = levReader(lev));
-	      		window.rec = rec;
+      			var lr = levRender(window.lrd = levReader(lev))/*.draw;*/.cached(5, function(w, h){
+      				var o = document.createElement("canvas");
+      				o.width = w;
+      				o.height = h;
+      				return o;
+      			});
+      			window.rec = rec;
 	      		var rrd = recReader(rec);
 	      		window.rrd = rrd;
 	      		var rrn = recRender(rrd);
@@ -37,7 +42,7 @@
 			/*	canvas.translate(canvase.width/2, canvase.height/2);
 				canvas.rotate(rrd.bikeR(n)*Math.PI*2/10000);
 				canvas.translate(-canvase.width/2, -canvase.height/2);*/
-				lr.draw(canvas, lgrO, left, top, canvase.width/scale, canvase.height/scale, scale);
+				lr(canvas, lgrO, left, top, canvase.width/scale, canvase.height/scale, scale);
 				rrn.draw(canvas, lgrO, n, left, top, scale);
 				canvas.restore();
 				n++;

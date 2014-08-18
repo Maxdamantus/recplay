@@ -11,7 +11,7 @@ define([], function(){
 		canv.rotate(Math.atan2(a,o));
 		canv.translate(-bx, -by*ih);
 		canv.scale(bx + br + hypot(o, a), ih);
-		img(canv);
+		img.draw(canv);
 		canv.restore();
 	}
 
@@ -59,7 +59,7 @@ define([], function(){
 				canv.rotate(-leftR);
 				canv.scale(38.4/48, 38.4/48);
 				canv.translate(-0.5, -0.5);
-				lgr.wheel(canv);
+				lgr.wheel.draw(canv);
 			canv.restore();
 
 			canv.save(); // right wheel
@@ -67,7 +67,7 @@ define([], function(){
 				canv.rotate(-rightR);
 				canv.scale(38.4/48, 38.4/48);
 				canv.translate(-0.5, -0.5);
-				lgr.wheel(canv);
+				lgr.wheel.draw(canv);
 			canv.restore();
 
 /*			canv.save(); // head
@@ -81,7 +81,7 @@ define([], function(){
 				canv.save();
 
 					canv.translate(-0.5, -0.5);
-					lgr.head(canv);
+					lgr.head.draw(canv);
 				canv.restore();
 
 			canv.restore();
@@ -119,7 +119,7 @@ define([], function(){
 					canv.rotate(-Math.atan(3/4));
 					canv.scale(10/47, 10/47);
 					canv.scale(380/48, 301/48);
-					lgr.bike(canv);
+					lgr.bike.draw(canv);
 				canv.restore();
 
 				canv.save(); // head
@@ -141,7 +141,7 @@ define([], function(){
 				canv.translate(-17/48, -42/48);
 				canv.scale(23/48, 23/48);
 //				canv.translate(-0.5, 0);
-				lgr.head(canv);
+				lgr.head.draw(canv);
 
 
 				canv.restore();
