@@ -130,7 +130,7 @@ define(["./binReader"], function(binReader){
 					case 2: return onApple(vx, vy, grav, anim);
 					case 3: return onKiller(vx, vy);
 					case 4: return onStart(vx, vy);
-					default: throw new Error("hmm");
+					default: throw new Error("hmm: " + obj + ", x = " + vx + ", y = " + vy);
 				}
 			},
 
