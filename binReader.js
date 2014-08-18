@@ -46,11 +46,49 @@ define([], function(){
 			return binReader(seq(8).split("").reverse().join("")).binFloat64be();
 		}
 
+		function binFloat32be(){
+			var sign, exp, mant, b;
+
+			b = byte();
+			sign = b >> 7;
+			exp = b & 127;
+			b = byte();
+			exp <<= 1;
+			exp |= b >> 7;
+			mant = b & 127;
+			for(b = 0; b < 2; b++){
+				mant *= 1 << 8;
+				mant += byte();
+			}
+			return (sign? -1 : 1)*Math.pow(2, exp - 127)*(1 + mant*Math.pow(2, -23));
+		}
+
+		function binFloat32le(){
+			return binReader(seq(4).split("").reverse().join("")).binFloat32be();
+		}
+
 		function word32le(){
-			var r = 0;
-			for(var x = 0; x < 4; x++)
-				r += byte() << (x*8);
-			return r;
+			return word16le() | word16le() << 16;
+		}
+
+		function word16le(){
+			return byte() | byte() << 8;
+		}
+
+		function int32le(){
+			var r = word32le();
+			return r > 1 << 31? r - (1 << 32) : r;
+		}
+
+		function int16le(){
+			//console.log("0x" + pos.toString(16));
+			var r = word16le();
+			return r > 1 << 15? r - (1 << 16) : r;
+		}
+
+		function int8(){
+			var r = byte();
+			return r > 1 << 7? r - (1 << 8) : r;
 		}
 
 		function string(max){
@@ -72,7 +110,13 @@ define([], function(){
 			skip: skip,
 			binFloat64be: binFloat64be,
 			binFloat64le: binFloat64le,
+			binFloat32le: binFloat32le,
+			binFloat32be: binFloat32be,
 			word32le: word32le,
+			word16le: word16le,
+			int32le: int32le,
+			int16le: int16le,
+			int8: int8,
 			string: string,
 			pstring: pstring,
 			pos: function(){

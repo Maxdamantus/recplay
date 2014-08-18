@@ -1,5 +1,5 @@
 define([], function(){
-	return function(reader){
+	return function levRender(reader){
 		var polyTree = [];
 		var grassPolys = [];
 
@@ -67,22 +67,48 @@ define([], function(){
 				addPoly(poly, polyTree);
 		});
 
-		return function(canv){
-			canv.scale(20, 20);
-			canv.translate(-minX, -minY);
+		// (x, y)–(x + w, y + h): viewport in Elma dimensions
+		function draw(canv, lgr, x, y, w, h, scale){
+			canv.save();
+
+			void function(){
+				var px = Math.floor(x*scale), py = Math.floor(y*scale);
+				var pw = Math.floor(w*scale), ph = Math.floor(h*scale);
+				var blockW = 280, blockH = 31;
+				var offsX = x >= 0? px%blockW : blockW - -px%blockW;
+				var offsY = y >= 0? py%blockH : blockH - -py%blockH;
+				canv.save();
+					canv.translate(-blockW - offsX, -blockH - offsY);
+					canv.scale(blockW, blockH);
+					for(var xb = 0; xb < pw/blockW + 2; xb++)
+						for(var yb = 0; yb < ph/blockH + 2; yb++){
+							canv.save();
+								canv.translate(xb, yb);
+								lgr.ground(canv);
+							canv.restore();
+						}
+				canv.restore();
+			}();
+
+			canv.translate(-x*scale, -y*scale);
+
+			canv.beginPath();
 			traverse(polyTree, false, function(isSolid, verts){
-//				canv.fillStyle = isSolid? "#0000ff" : "#00ff00";
-				console.log(verts);
-//				canv.beginPath();
-				canv.moveTo(verts[0][0], verts[0][1]);
-				for(var x = 0; x < verts.length; x++){
-					console.log(verts[x]);
-					canv.lineTo(verts[x][0], verts[x][1]);
-				}
-//				canv.closePath();
-//				canv.fill();
+				canv.moveTo(scale*verts[0][0], scale*verts[0][1]);
+				for(var z = 1; z < verts.length; z++)
+					canv.lineTo(scale*verts[z][0], scale*verts[z][1]);
 			});
+			canv.globalCompositeOperation = "destination-out";
 			canv.fill();
+			canv.restore();
+		};
+
+		function cache(mkCanv){
+			
+		}
+
+		return {
+			draw: draw
 		};
 	};
 });

@@ -8,18 +8,44 @@
     <script src="amd.js"></script>
     <script>
       window.onload = function(){
-      	require(["./binReader", "./levReader", "./levRender", "./Smibu80"], function(binReader, levReader, levRender, glide005){
+      	require(["./binReader", "./levReader", "./levRender", "./recReader", "./recRender", "./get", "./Smibu80", "./lgr"], function(binReader, levReader, levRender, recReader, recRender, get, glide005, lgr){
       		window.l = {
       			binReader: binReader,
       			levReader: levReader,
       			levRender: levRender
       		};
       		var canvase = document.body.appendChild(document.createElement("canvas"));
-      		canvase.width = "1920";
-      		canvase.height = "1080";
+      		canvase.width = "1280";
+      		canvase.height = "1024";
       		var canvas = canvase.getContext("2d");
-      		var lr = levRender(levReader(glide005));
-      		lr(canvas);
+      		var lgrO = lgr("../../images");
+      		get("Smibu80.lev", function(lev){
+      		get("smibu80meh1344.rec", function(rec){
+      			var lr = levRender(window.lrd = levReader(lev));
+	      		window.rec = rec;
+	      		var rrd = recReader(rec);
+	      		window.rrd = rrd;
+	      		var rrn = recRender(rrd);
+	      		var n = 0;
+	      		setInterval(function(){
+	      		//	n = 600;
+	      			var scale = 48;
+				var left = rrd.bikeX(n) - canvase.width/scale/2;
+				var top = -rrd.bikeY(n) - canvase.height/scale/2;
+				canvas.clearRect(0, 0, canvase.width, canvase.height);
+				canvas.save();
+			/*	canvas.translate(canvase.width/2, canvase.height/2);
+				canvas.rotate(rrd.bikeR(n)*Math.PI*2/10000);
+				canvas.translate(-canvase.width/2, -canvase.height/2);*/
+				lr.draw(canvas, lgrO, left, top, canvase.width/scale, canvase.height/scale, scale);
+				rrn.draw(canvas, lgrO, n, left, top, scale);
+				canvas.restore();
+				n++;
+				if(n >= rrd.frameCount())
+					n = 0;
+			}, 1000/30);
+	      	});
+	      	});
       	});
       }
     </script>
