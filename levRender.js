@@ -95,8 +95,8 @@ define([], function(){
 			canv.fill();
 			canv.restore();
 
-			canv.strokeStyle = "#ff0000";
-			canv.strokeRect(0, 0, w*scale, h*scale);
+/*			canv.strokeStyle = "#ff0000";
+			canv.strokeRect(0, 0, w*scale, h*scale); */
 		};
 
 		// assumes widths and heights are positive
@@ -110,7 +110,7 @@ define([], function(){
 
 		function cached(num, mkCanv){
 			var cscale, xp, yp, wp, hp;
-			var canvs = [], lgr;
+			var canvs = [], lgr, lgrIdent;
 
 			function update(which, canv){
 				var x = which%num, y = Math.floor(which/num);
@@ -120,12 +120,13 @@ define([], function(){
 			}
 
 			return function cachedDraw(canv, lgr_, x, y, w, h, scale){
-				lgr = lgr_; // meh, no invalidation
+				lgr = lgr_;
 				w = Math.ceil(w*scale);
 				h = Math.ceil(h*scale);
 				x = Math.floor(x*scale);
 				y = Math.floor(y*scale);
-				if(scale != cscale || Math.ceil(w/(num - 1)) != wp || Math.ceil(h/(num - 1)) != hp || !rectsOverlap(xp, yp, wp*num, hp*num, x, y, w, h)){
+				if(lgr._ident != lgrIdent || scale != cscale || Math.ceil(w/(num - 1)) != wp || Math.ceil(h/(num - 1)) != hp || !rectsOverlap(xp, yp, wp*num, hp*num, x, y, w, h)){
+					lgrIdent = lgr._ident;
 					wp = Math.ceil(w/(num - 1));
 					hp = Math.ceil(h/(num - 1));
 					xp = x - Math.floor(wp/2);
@@ -174,7 +175,21 @@ define([], function(){
 
 		return {
 			draw: draw,
-			cached: cached
+			cached: cached,
+			drawSky: function(canv, lgr, x, y, w, h, scale){
+				x = Math.floor(x*scale/3);
+				y = Math.floor(y*scale/3);
+				w *= scale;
+				h *= scale;
+				if((x = x%640) < 0)
+					x = 640 + x;
+				if((y = y%480) < 0)
+					y = 480 + y;
+				canv.save();
+				canv.translate(-x, -480 + y);
+				lgr.sky.repeat(canv, w + 640, h + 480);
+				canv.restore();
+			}
 		};
 	};
 });

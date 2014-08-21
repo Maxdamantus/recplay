@@ -37,6 +37,9 @@ define(["./binReader"], function(binReader){
 		var int16s = gticker(2, 7, br.int16le); // leftX, leftY, rightX, rightY, headX, headY, bikeR
 		var word8s = gticker(1, 5, br.byte); // leftR, rightR, turn, unk1, unk2
 
+		var eventCount = gticker(4, 1, br.word32le)(0)(0); // heh
+		var offsEvents = br.pos();
+
 		return {
 			frameCount: function(){
 				return frameCount;
@@ -55,7 +58,17 @@ define(["./binReader"], function(binReader){
 
 			leftR: word8s(0),
 			rightR: word8s(1),
-			turn: word8s(2)
+			turn: word8s(2),
+
+			eventCount: function(){
+				return eventCount;
+			},
+
+			event: function(n, fn){
+				br.seek(offsEvents + n*(8 + 4 + 4));
+				fn(br.binFloat64le(), br.word32le(), br.word32le());
+				//fn(br.binFloat64le(), br.byte(), br.byte(), br.byte(), br.byte(), br.byte(), br.byte(), br.byte(), br.byte());
+			}
 		};
 	};
 });
