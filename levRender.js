@@ -71,6 +71,22 @@ define([], function(){
 		function draw(canv, lgr, x, y, w, h, scale){
 			canv.save();
 
+			canv.beginPath();
+			canv.moveTo(0, 0);
+			canv.lineTo(w*scale, 0);
+			canv.lineTo(w*scale, h*scale);
+			canv.lineTo(0, h*scale);
+
+			canv.translate(-x*scale, -y*scale);
+
+			traverse(polyTree, false, function(isSolid, verts){
+				canv.moveTo(scale*verts[verts.length - 1][0], scale*verts[verts.length - 1][1]);
+				for(var z = verts.length - 2; z >= 0; z--)
+					canv.lineTo(scale*verts[z][0], scale*verts[z][1]);
+			});
+
+			canv.translate(x*scale, y*scale);
+			canv.clip(); // clip isn't antialiased in Chromium—different with destination-out
 			void function(){
 				var px = Math.floor(x*scale), py = Math.floor(y*scale);
 				var pw = Math.floor(w*scale), ph = Math.floor(h*scale);
@@ -83,20 +99,10 @@ define([], function(){
 				canv.restore();
 			}();
 
-			canv.translate(-x*scale, -y*scale);
-
-			canv.beginPath();
-			traverse(polyTree, false, function(isSolid, verts){
-				canv.moveTo(scale*verts[0][0], scale*verts[0][1]);
-				for(var z = 1; z < verts.length; z++)
-					canv.lineTo(scale*verts[z][0], scale*verts[z][1]);
-			});
-			canv.globalCompositeOperation = "destination-out";
-			canv.fill();
 			canv.restore();
 
-/*			canv.strokeStyle = "#ff0000";
-			canv.strokeRect(0, 0, w*scale, h*scale); */
+			/*canv.strokeStyle = "#ff0000";
+			canv.strokeRect(0, 0, w*scale, h*scale);*/
 		};
 
 		// assumes widths and heights are positive
@@ -116,7 +122,9 @@ define([], function(){
 				var x = which%num, y = Math.floor(which/num);
 				x = xp + x*wp;
 				y = yp + y*hp;
-				draw(canv.getContext("2d"), lgr, x/cscale, y/cscale, wp/cscale, hp/cscale, cscale);
+				var ctx = canv.getContext("2d");
+				ctx.clearRect(0, 0, canv.width, canv.height);
+				draw(ctx, lgr, x/cscale, y/cscale, wp/cscale, hp/cscale, cscale);
 			}
 
 			return function cachedDraw(canv, lgr_, x, y, w, h, scale){

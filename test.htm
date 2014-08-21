@@ -38,7 +38,7 @@
 	      		var n = 0;
 	      		var start = Number(new Date());
 	      		setInterval(function(){
-	      			var scale = 48*1.5;
+	      			var scale = 48*1.5
 				var left = rrd.bikeX(n) - canvase.width/scale/2;
 				var top = -rrd.bikeY(n) - canvase.height/scale/2;
 				canvas.clearRect(0, 0, canvase.width, canvase.height);
@@ -49,7 +49,7 @@
 					canvas.translate(-scale*rrd.headX(n)/1000, scale*rrd.headY(n)/1000);
 					canvas.translate(-canvase.width/2, -canvase.height/2);
 				}
-				//lrn.drawSky(canvas, lgrO, left, top, canvase.width/scale, canvase.height/scale, scale);
+				lrn.drawSky(canvas, lgrO, left, top, canvase.width/scale, canvase.height/scale, scale);
 				lr(canvas, lgrO, left, top, canvase.width/scale, canvase.height/scale, scale);
 				objrn.draw(canvas, lgrO, n, left, top, scale);
 				rrn.draw(canvas, lgrO, n, left, top, scale);
