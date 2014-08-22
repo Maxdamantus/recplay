@@ -50,7 +50,22 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 		}
 
 		return {
-			draw: function(canv, x, y, w, h){
+			draw: function(canv, x, y, w, h, onlyMaybe){
+				var curFrame = refFrame + (Date.now() - refTime)*speed100*30/1000/100;
+				if(replays.length > 0){
+					if(curFrame >= frameCount){
+						curFrame = refFrame = 0;
+						refTime = Date.now();
+					}else if(curFrame < 0){
+						curFrame = refFrame = frameCount - 1;
+						refTime = Date.now();
+					}
+				}
+
+				if(onlyMaybe && lastFrame == curFrame)
+					return;
+				lastFrame = curFrame;
+
 				x = Math.floor(x); y = Math.floor(y);
 				w = Math.floor(w); h = Math.floor(h);
 				canv.save();
@@ -64,26 +79,11 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 
 				canv.clearRect(0, 0, w, h);
 
-				var curFrame = refFrame + (Date.now() - refTime)*speed100*30/1000/100;
-				if(replays.length > 0){
-					if(curFrame >= frameCount){
-						curFrame = refFrame = 0;
-						refTime = Date.now();
-					}else if(curFrame < 0){
-						curFrame = refFrame = frameCount - 1;
-						refTime = Date.now();
-					}
-				}
-				lastFrame = curFrame - lastFrame < 1? lastFrame + signum(speed100) : Math.floor(curFrame); // will do interpolation soon
-				// TODO: think more about this
-				// the point is to reduce aliasing effects of frame rate vs. frame availability (assuming uninterpolated)
-				lastFrame = (speed100 >= 0? Math.min : Math.max)(lastFrame, Math.floor(curFrame));
-
 				var centreX = offsX, centreY = offsY;
 				if(focus && replays.length > 0){
 					var lf = cap(replays[0].rd.frameCount() - 1);
-					centreX += replays[0].rd.bikeX(lf);
-					centreY -= replays[0].rd.bikeY(lf);
+					centreX += replays[0].rn.bikeXi(lf);
+					centreY -= replays[0].rn.bikeYi(lf);
 				}else{
 					centreX += startX;
 					centreY += startY;
