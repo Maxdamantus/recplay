@@ -1,4 +1,15 @@
 define(["./levRender", "./recRender", "./objRender"], function(levRender, recRender, objRender){
+	function signum(n){
+		return n < 0? -1 : n > 0? 1 : 0;
+	}
+
+	function pad(n, s){
+		s = String(s);
+		while(s.length < n)
+			s = "0" + s;
+		return s;
+	}
+
 	return function(levRd, lgr, makeCanvas){
 		var replays = [], levRn = levRender(levRd), levDraw = levRn.cached(2, makeCanvas);
 		var lastFrame = 0;
@@ -29,7 +40,7 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 				return rp.rd.frameCount();
 			}).reduce(function(a, b){
 				return Math.max(a, b);
-			}, 0);
+			}, 0) + 30;
 		}
 
 		var frameCount = calcFrameCount();
@@ -63,10 +74,10 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 						refTime = Date.now();
 					}
 				}
-				lastFrame = curFrame - lastFrame < 1? lastFrame + 1 : Math.floor(curFrame); // will do interpolation soon
+				lastFrame = curFrame - lastFrame < 1? lastFrame + signum(speed100) : Math.floor(curFrame); // will do interpolation soon
 				// TODO: think more about this
 				// the point is to reduce aliasing effects of frame rate vs. frame availability (assuming uninterpolated)
-				lastFrame = Math.min(lastFrame, Math.floor(curFrame));
+				lastFrame = (speed100 >= 0? Math.min : Math.max)(lastFrame, Math.floor(curFrame));
 
 				var centreX = offsX, centreY = offsY;
 				if(focus && replays.length > 0){
@@ -88,6 +99,14 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 					replays[0].objRn.draw(canv, lgr, cap(replays[0].rd.frameCount() - 1), ex, ey, escale);
 				for(var z = replays.length - 1; z >= 0; z--)
 					replays[z].rn.draw(canv, lgr, cap(replays[z].rd.frameCount() - 1), ex, ey, escale);
+				if(focus && replays.length > 0){
+					var t = Math.floor(cap(replays[0].rd.frameCount() - 1)*100/30);
+					canv.font = "14px monospace";
+					canv.fillStyle = "yellow";
+					var csec = pad(2, t%100); t = Math.floor(t/100);
+					var sec = pad(2, t%60); t = Math.floor(t/60);
+					canv.fillText(t + ":" + sec + "." + csec, 10, 24);
+				}
 
 				canv.restore();
 			},

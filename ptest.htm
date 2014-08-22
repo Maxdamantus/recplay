@@ -39,11 +39,23 @@
       			but("out", function(){
       				return pl.setScale100(pl.getScale100() - 10);
       			});
+      			but("z1", function(){
+      				return pl.setScale100(100);
+      			});
        			but("faster", function(){
       				return pl.setSpeed100(pl.getSpeed100() + 10);
       			});
       			but("slower", function(){
       				return pl.setSpeed100(pl.getSpeed100() - 10);
+      			});
+      			but("s1", function(){
+      				return pl.setSpeed100(100);
+      			});
+      			but("s0", function(){
+      				return pl.setSpeed100(0);
+      			});
+      			but("-s", function(){
+      				return pl.setSpeed100(-pl.getSpeed100());
       			});
       			
       			document.body.insertBefore(document.createElement("br"), canvase);
