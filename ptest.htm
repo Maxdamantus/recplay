@@ -1,0 +1,73 @@
+<html>
+  <head>
+    <style>
+      canvas {
+      	border: 1px solid;
+      }
+    </style>
+    <script src="amd.js"></script>
+    <script>
+      window.onload = function(){
+      	require(["./levReader", "./recReader", "./get", "./lgr", "./player"], function(levReader, recReader, get, lgr, player){
+      		var canvase = document.body.appendChild(document.createElement("canvas"));
+      		canvase.width = "1024";
+      		canvase.height = "800";
+      		var canvas = canvase.getContext("2d");
+      		get("mawpi712.lev", function(lev){
+      			var pl = player(levReader(lev), lgr("../../images"), function(w, h){
+      				var o = document.createElement("canvas");
+      				o.width = w;
+      				o.height = h;
+      				return o;
+      			});
+      			window.pl = pl; // just so it's accessible in the console
+
+			function but(lbl, fun){
+      				var a = document.body.insertBefore(document.createElement("a"), canvase);
+      				a.href = "#";
+      				a.onclick = function(e){
+      					console.log(fun());
+      					e.preventDefault();
+      				};
+      				a.appendChild(document.createTextNode(lbl));
+      				document.body.insertBefore(document.createTextNode(" "), canvase);
+      			}
+
+      			but("in", function(){
+      				return pl.setScale100(pl.getScale100() + 10);
+      			});
+      			but("out", function(){
+      				return pl.setScale100(pl.getScale100() - 10);
+      			});
+       			but("faster", function(){
+      				return pl.setSpeed100(pl.getSpeed100() + 10);
+      			});
+      			but("slower", function(){
+      				return pl.setSpeed100(pl.getSpeed100() - 10);
+      			});
+      			
+      			document.body.insertBefore(document.createElement("br"), canvase);
+
+	      		setInterval(function(){
+	      			//pl.draw(canvas, canvase.width*0.25, canvase.height*0.25, canvase.width/2, canvase.height/2);
+	      			// TODO: requestAnimationFrame
+	      			pl.draw(canvas, 0, 0, canvase.width, canvase.height);
+			}, 1000/30);
+			["mawpi712_218Max.rec", "mawpi712_218adi.rec"].forEach(function(n){
+				get(n, function(rec){
+					pl.addReplay(recReader(rec));
+				});
+			});
+
+			canvase.onclick = function(e){
+				pl.changeFocus();
+				e.preventDefault();
+			};
+	      	});
+      	});
+      }
+    </script>
+  </head>
+  <body>
+  </body>
+</html>

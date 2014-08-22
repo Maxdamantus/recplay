@@ -2,8 +2,11 @@ define([], function(){
 	var imgs = ["bike", "ground", "head", "sky", "susp1", "susp2", "wheel", "qfood1", "qexit", "q1body", "q1forarm", "q1leg", "q1thigh", "q1up_arm", "myshirt"];
 
 	function loading(canv){
-		canv.fillStyle = "#00ff00";
-		canv.fillRect(0, 0, 1, 1);
+		canv.save();
+		canv.lineWidth = 1/20;
+		canv.strokeStyle = "#00ff00";
+		canv.strokeRect(0, 0, 1, 1);
+		canv.restore();
 	}
 
 	return function(path){
