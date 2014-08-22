@@ -1,14 +1,14 @@
 define([], function(){
 	return function objRender(levReader, recReader){
 		var objs = function(){
-			var o = [];
+			var apples = [], o = [];
 
 			function fl(x, y){
 				o.push({ type: "fl", pos: [x, y] });
 			}
 
 			function ap(x, y, grav, anim){
-				o.push({ type: "ap", pos: [x, y], grav: grav, anim: anim });
+				apples.push({ type: "ap", pos: [x, y], grav: grav, anim: anim });
 			}
 
 			function ki(x, y){
@@ -24,7 +24,7 @@ define([], function(){
 			for(var x = 0; x < count; x++)
 				levReader.obj(x, fl, ap, ki, st);
 
-			return o;
+			return apples.concat(o);
 		}();
 
 		void function(){
@@ -34,7 +34,7 @@ define([], function(){
 					// dunno exactly what a and b are, but this seems to work
 					if(b == 0) // TODO: check it's actually there?
 						objs[a].taken = Math.floor(time/.01455976568094950714);
-				});
+			});
 		}();
 
 		return {
