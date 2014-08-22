@@ -59,6 +59,37 @@ define([], function(){
 			return x? volts[x - 1] : null;
 		}
 
+		function interpolate(fn){
+			return function(n){
+				var f = Math.floor(n), o = n - f, r = fn(f);
+				if(o == 0)
+					return r;
+				return r + (fn(f + 1) - r)*o;
+			};
+		}
+
+		function interpolateAng(fn, mod){
+			return function(n){
+				var f = Math.floor(n), o = n - f, r = fn(f);
+				if(o == 0)
+					return r;
+				var fs = fn(f + 1), offs = 0;
+				if(Math.abs(f - fs) <= Math.abs((f + mod/2)%mod - (fs + mod/2)%mod))
+					offs = mod/2;
+				return ((f + offs)%mod + (fs + offs)%mod)/2 - offs;
+			};
+		}
+
+		var bikeRi = interpolateAng(reader.bikeR, 10000);
+		var leftXi = interpolate(reader.leftX);
+		var leftYi = interpolate(reader.leftY);
+		var leftRi = interpolateAng(reader.leftR, 250);
+		var rightXi = interpolate(reader.rightX);
+		var rightYi = interpolate(reader.rightY);
+		var rightRi = interpolateAng(reader.rightR, 250);
+		var headXi = interpolate(reader.headX);
+		var headYi = interpolate(reader.headY);
+
 		console.log(turnFrames);
 		console.log(volts);
 		// (x, y): top left in Elma coordinates
@@ -68,16 +99,16 @@ define([], function(){
 			canv.translate(-x + reader.bikeX(frame), -y - reader.bikeY(frame));
 			canv.beginPath();
 
-			var bikeR = reader.bikeR(frame)*Math.PI*2/10000;
+			var bikeR = bikeRi(frame)*Math.PI*2/10000;
 			var turn = reader.turn(frame) >> 1 & 1;
-			var leftX = reader.leftX(frame)/1000;
-			var leftY = reader.leftY(frame)/1000;
-			var leftR = reader.leftR(frame)*Math.PI*2/250;
-			var rightX = reader.rightX(frame)/1000;
-			var rightY = reader.rightY(frame)/1000;
-			var rightR = reader.rightR(frame)*Math.PI*2/250;
-			var headX = reader.headX(frame)/1000;
-			var headY = reader.headY(frame)/1000;
+			var leftX = leftXi(frame)/1000;
+			var leftY = leftYi(frame)/1000;
+			var leftR = leftRi(frame)*Math.PI*2/250;
+			var rightX = rightXi(frame)/1000;
+			var rightY = rightYi(frame)/1000;
+			var rightR = rightRi(frame)*Math.PI*2/250;
+			var headX = headXi(frame)/1000;
+			var headY = headYi(frame)/1000;
 			var lastTurnF = lastTurn(frame);
 
 			canv.save(); // left wheel
