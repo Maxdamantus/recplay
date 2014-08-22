@@ -23,6 +23,7 @@ define([], function(){
 					canv.fillRect(0, 0, w, h);
 				};
 				r[i].frame = function(canv, num, of){
+					num = Math.floor(num);
 					canv.save();
 					canv.beginPath();
 					canv.moveTo(0, 0);

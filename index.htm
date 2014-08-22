@@ -20,7 +20,6 @@
       				o.height = h;
       				return o;
       			});
-//      			pl.setScale100(50);
       			window.pl = pl; // just so it's accessible in the console
 
 			function but(lbl, fun){
@@ -64,8 +63,8 @@
       			function anim(){
 	      			pl.draw(canvas, 0, 0, canvase.width, canvase.height, true);
 	      			// note: this actually uses 4/3 times the CPU on Chromium as setInterval
-	      			//requestAnimationFrame(anim);
-	      			setTimeout(anim, 1000/30);
+	      			requestAnimationFrame(anim);
+	      			//setTimeout(anim, 1000/30);
 	      		}
 	      		anim();
 //	      		setInterval(anim, 1000/60);

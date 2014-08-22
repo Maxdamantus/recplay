@@ -101,8 +101,8 @@ define([], function(){
 
 			canv.restore();
 
-			canv.strokeStyle = "#ff0000";
-			canv.strokeRect(0, 0, w*scale, h*scale);
+			/*canv.strokeStyle = "#ff0000";
+			canv.strokeRect(0, 0, w*scale, h*scale);*/
 		};
 
 		// assumes widths and heights are positive

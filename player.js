@@ -61,13 +61,10 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 						refTime = Date.now();
 					}
 				}
-				var lastFrame_ = Math.abs(curFrame - lastFrame) < 1? lastFrame + signum(speed100) : (speed100 >= 0? Math.floor : Math.ceil)(curFrame); // will do interpolation soon
-				// TODO: think more about this
-				// the point is to reduce aliasing effects of frame rate vs. frame availability (assuming uninterpolated)
-				lastFrame_ = (speed100 >= 0? Math.min : Math.max)(lastFrame_, Math.floor(curFrame));
-				if(onlyMaybe && lastFrame == lastFrame_)
+
+				if(onlyMaybe && lastFrame == curFrame)
 					return;
-				lastFrame = lastFrame_;
+				lastFrame = curFrame;
 
 				x = Math.floor(x); y = Math.floor(y);
 				w = Math.floor(w); h = Math.floor(h);
@@ -85,8 +82,8 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 				var centreX = offsX, centreY = offsY;
 				if(focus && replays.length > 0){
 					var lf = cap(replays[0].rd.frameCount() - 1);
-					centreX += replays[0].rd.bikeX(lf);
-					centreY -= replays[0].rd.bikeY(lf);
+					centreX += replays[0].rn.bikeXi(lf);
+					centreY -= replays[0].rn.bikeYi(lf);
 				}else{
 					centreX += startX;
 					centreY += startY;

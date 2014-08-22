@@ -73,13 +73,15 @@ define([], function(){
 				var f = Math.floor(n), o = n - f, r = fn(f);
 				if(o == 0)
 					return r;
-				var fs = fn(f + 1), offs = 0;
-				if(Math.abs(f - fs) <= Math.abs((f + mod/2)%mod - (fs + mod/2)%mod))
-					offs = mod/2;
-				return ((f + offs)%mod + (fs + offs)%mod)/2 - offs;
+				var rs = fn(f + 1), offs = 0;
+				var diff1 = rs - r, diff2 = (rs + mod/2)%mod - (r + mod/2)%mod;
+				var diff = Math.abs(diff1) < Math.abs(diff2)? diff1 : diff2;
+				return r + diff*o;
 			};
 		}
 
+		var bikeXi = interpolate(reader.bikeX);
+		var bikeYi = interpolate(reader.bikeY);
 		var bikeRi = interpolateAng(reader.bikeR, 10000);
 		var leftXi = interpolate(reader.leftX);
 		var leftYi = interpolate(reader.leftY);
@@ -95,12 +97,12 @@ define([], function(){
 		// (x, y): top left in Elma coordinates
 		function draw(canv, lgr, frame, x, y, scale){
 			canv.save();
+			canv.translate(Math.round(scale*(-x + bikeXi(frame))), Math.round(scale*(-y - bikeYi(frame))));
 			canv.scale(scale, scale);
-			canv.translate(-x + reader.bikeX(frame), -y - reader.bikeY(frame));
 			canv.beginPath();
 
 			var bikeR = bikeRi(frame)*Math.PI*2/10000;
-			var turn = reader.turn(frame) >> 1 & 1;
+			var turn = reader.turn(Math.floor(frame)) >> 1 & 1;
 			var leftX = leftXi(frame)/1000;
 			var leftY = leftYi(frame)/1000;
 			var leftR = leftRi(frame)*Math.PI*2/250;
@@ -109,7 +111,7 @@ define([], function(){
 			var rightR = rightRi(frame)*Math.PI*2/250;
 			var headX = headXi(frame)/1000;
 			var headY = headYi(frame)/1000;
-			var lastTurnF = lastTurn(frame);
+			var lastTurnF = lastTurn(Math.floor(frame));
 
 			canv.save(); // left wheel
 				canv.translate(leftX, -leftY);
@@ -214,7 +216,7 @@ define([], function(){
 					var lower = 17/48, upper = 17/48;
 					var shoulder2hand = hypot(handx - shoulderx, handy - shouldery);
 
-					var lv = lastVolt(frame);
+					var lv = lastVolt(Math.floor(frame));
 					if(lv != null && frame - lv[0] < 25){
 						// anim: 20/100 s to move hand to new position, 75/100 s to move back
 						var animpos = frame - lv[0];
@@ -252,7 +254,9 @@ define([], function(){
 		}
 
 		return {
-			draw: draw
+			draw: draw,
+			bikeXi: bikeXi,
+			bikeYi: bikeYi
 		};
 	};
 });
