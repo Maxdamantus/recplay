@@ -3,6 +3,15 @@ define([], function(){
 		return Math.sqrt(a*a + b*b);
 	}
 
+	// assumes widths and heights are positive
+	function rectsOverlap(x1, y1, w1, h1, x2, y2, w2, h2){
+		return ( // parentheses required! ASI!
+			x1 + w1 >= x2 &&
+			y1 + h1 >= y2 &&
+			x2 + w2 >= x1 &&
+			y2 + h2 >= y1);
+	}
+
 	return function levRender(reader){
 		var polyTree = [];
 		var grassPolys = [];
@@ -84,17 +93,8 @@ define([], function(){
 			return o;
 		}();
 
-		function renderGrassPoly(canv, lgr, scale, poly){
-			canv.beginPath();
-			canv.moveTo(poly[0][0]*scale, poly[0][1]*scale);
-			for(var z = 0; z < poly.length; z++)
-				canv.lineTo(poly[z][0]*scale, poly[z][1]*scale);
-			canv.closePath();
-			canv.strokeStyle = "green";
-			canv.stroke();
-		}
-
-		function renderGrassPoly_(canv, lgr, x, y, w, h, scale, poly){
+		function renderGrassPoly(canv, lgr, x, y, w, h, scale, poly){
+			x = x*scale; y = y*scale; w = w*scale; h = h*scale;
 			// the path selection is demonstrably wrong, but it probably works in all reasonable cases.
 			// it draws along the path from the left-most vertex to the right-most vertex that doesn't
 			//   include the widest edge.
@@ -125,6 +125,9 @@ define([], function(){
 			}
 			var curX = poly[minXi][0]*scale, curY = poly[minXi][1]*scale;
 			var gUps = lgr.grassUp(), gDowns = lgr.grassDown();
+			canv.beginPath();
+			canv.moveTo(curX, curY - scale);
+			canv.lineTo(curX, curY);
 			while(curX < maxX*scale){
 				var bestD = Infinity, bestA, bestI;
 				for(var a = 0; a < gUps.length; a++){
@@ -151,38 +154,47 @@ define([], function(){
 					curX++;
 					continue;
 				}
-				var fall = (bestA[bestI].height - 41)*(bestA == gUps? -1 : 1);
+				var pict = bestA[bestI];
+				var fall = (pict.height - 41)*(bestA == gUps? -1 : 1);
+				var fcx = Math.floor(curX), fcy = Math.floor(curY + fall);
+				var fcyTop = Math.floor(curY) - Math.ceil((pict.height - fall)/2);
 
-				// TODO: might be worth skipping rendering bits here
-				canv.save();
-					canv.beginPath();
-					var fcx = Math.floor(curX), fcy = Math.floor(curY + fall);
-					var fcyTop = Math.floor(curY) - Math.ceil((bestA[bestI].height - fall)/2);
-					canv.moveTo(fcx, fcyTop - scale);
+				var isVisible = rectsOverlap(fcx, fcyTop, pict.width, pict.height, x, y, w, h);
+
+				if(isVisible)
 					for(var xl = 0; xl < bestA[bestI].width; xl++){
-						canv.lineTo(fcx + xl, fcyTop + bestA[bestI].borders[xl]);
-						canv.lineTo(fcx + xl + 1, fcyTop + bestA[bestI].borders[xl]);
+						canv.lineTo(fcx + xl, fcyTop + pict.borders[xl]);
+						canv.lineTo(fcx + xl + 1, fcyTop + pict.borders[xl]);
 					}
-					canv.lineTo(fcx + xl, fcyTop - scale);
-					canv.closePath();
-					canv.strokeStyle = "black";
-					canv.clip();
-					var ox = Math.floor(curX), oy = Math.floor(curY + fall) - scale;
-					var blockW = lgr.picts.qgrass.width, blockH = lgr.picts.qgrass.height; // TODO: this, in lgr?
-					var offsX = fcx >= 0? fcx%blockW : blockW - -fcx%blockW;
-					var offsY = fcy >= 0? fcy%blockH : blockH - -fcy%blockH;
-					canv.translate(fcx - offsX, fcy - scale - offsY); // TODO
-					lgr.picts.qgrass.repeat(canv, blockH*2 + scale*2, blockH*2 + scale*2); // TODO
-				canv.restore();
+				else
+					canv.lineTo(curX + pict.width, curY + fall);
 
 				canv.save();
 					canv.translate(fcx, fcyTop);
-					bestA[bestI].drawAt(canv);
+					if(isVisible)
+						pict.drawAt(canv);
 				canv.restore();
 
-				curX += bestA[bestI].width;
+				curX += pict.width;
 				curY += fall;
 			}
+			canv.lineTo(curX, curY - scale);
+			// opposite direction—further deviation from strict Elma style
+			for(var z = poly.length + maxXi; z%poly.length != minXi; z -= dir){
+				var from = poly[z%poly.length];
+				canv.lineTo(from[0]*scale, from[1]*scale - scale);
+			}
+
+			canv.save();
+				canv.clip();
+				var ox = Math.floor(curX), oy = Math.floor(curY + fall) - scale;
+				var blockW = lgr.picts.qgrass.width, blockH = lgr.picts.qgrass.height; // TODO: this, in lgr?
+				var offsX = x >= 0? x%blockW : blockW - -x%blockW;
+				var offsY = y >= 0? y%blockH : blockH - -y%blockH;
+				canv.translate(x - offsX, y - offsY); // TODO
+				lgr.picts.qgrass.repeat(canv, w + blockW*2, h + blockH*2); // TODO
+			canv.restore();
+
 			for(var z = poly.length + minXi; window.dbg && z%poly.length != maxXi; z += dir){
 				canv.beginPath();
 				var from = poly[z%poly.length], to = poly[(z + dir)%poly.length];
@@ -242,33 +254,25 @@ define([], function(){
 			}();
 			canv.translate(-x*scale, -y*scale);
 			grassPolys.forEach(function(poly){
-				renderGrassPoly_(canv, lgr, x, y, w, h, scale, poly);
+				renderGrassPoly(canv, lgr, x, y, w, h, scale, poly);
 			});
 
 			canv.restore();
 
 			canv.save();
 			canv.translate(-x*scale, -y*scale);
-/*
-			grassPolys.forEach(function(poly){
+
+/*			grassPolys.forEach(function(poly){
 				//renderGrassPoly(canv, lgr, scale, poly);
-				renderGrassPoly_(canv, lgr, x, y, w, h, scale, poly);
+				renderGrassPoly(canv, lgr, x, y, w, h, scale, poly);
 			});*/
 			canv.restore();
 
 
-			/*canv.strokeStyle = "#ff0000";
-			canv.strokeRect(0, 0, w*scale, h*scale);*/
+			canv.strokeStyle = "#ff0000";
+			if(window.dbg)
+				canv.strokeRect(0, 0, w*scale, h*scale);
 		};
-
-		// assumes widths and heights are positive
-		function rectsOverlap(x1, y1, w1, h1, x2, y2, w2, h2){
-			return ( // parentheses required! ASI!
-				x1 + w1 >= x2 &&
-				y1 + h1 >= y2 &&
-				x2 + w2 >= x1 &&
-				y2 + h2 >= y1);
-		}
 
 		function cached(num, mkCanv){
 			var cscale, xp, yp, wp, hp;
