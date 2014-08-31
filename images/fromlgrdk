@@ -1,0 +1,21 @@
+#!/bin/bash
+
+transcol(){
+	stream tga:<(convert "$1" -crop 1x1+0+0 tga:-) - | od -N3 -t x4 | head -1 | tail -c7 | sed 's/^\(..\)\(..\)\(..\)$/\3\2\1/'
+}
+
+pictures=()
+n=0
+
+cat "$1"/PICTURES.LST | while read picline; do
+	picline="$(sed 's/ \+/ /g' <<< "$picline")"
+	name="$(cut -d\  -f 1 <<< "$picline" | tr a-z A-Z)"
+	pictures[$((n++))]="$name"
+	tr A-Z a-z <<< "${pictures[@]}"
+	type="$(cut -d\  -f 2 <<< "$picline")"
+	trans="$(
+		if egrep -i '^(mask|pict)$' <<< "$type" >/dev/null; then
+			echo "-fuzz 5% -transparent #$(transcol "$1"/"$name".TGA)"
+		fi)"
+	convert "$1"/"$name".TGA $trans "$(tr A-Z a-z <<< "$name")".png
+done | tail -1
