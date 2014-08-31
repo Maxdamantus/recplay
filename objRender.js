@@ -1,22 +1,25 @@
 define([], function(){
 	return function objRender(levReader, recReader){
+		var appleCount = 0;
+
 		var objs = function(){
-			var apples = [], o = [];
+			var flowers = [], apples = [], killers = [], starts = [];
 
 			function fl(x, y){
-				o.push({ type: "fl", pos: [x, y] });
+				flowers.push({ type: "fl", pos: [x, y] });
 			}
 
 			function ap(x, y, grav, anim){
+				appleCount++;
 				apples.push({ type: "ap", pos: [x, y], grav: grav, anim: anim });
 			}
 
 			function ki(x, y){
-				o.push({ type: "ki", pos: [x, y] });
+				killers.push({ type: "ki", pos: [x, y] });
 			}
 
 			function st(x, y){
-				o.push({ type: "st", pos: [x, y] });
+				starts.push({ type: "st", pos: [x, y] });
 			}
 
 			// TODO: handle errors
@@ -24,20 +27,32 @@ define([], function(){
 			for(var x = 0; x < count; x++)
 				levReader.obj(x, fl, ap, ki, st);
 
-			return apples.concat(o);
+			return [].concat(killers, apples, flowers, starts);
 		}();
 
+		var applesTaken = [];
 		void function(){
 			var count = recReader.eventCount();
 			for(var x = 0; x < count; x++)
-				recReader.event(x, function(time, a, b){
-					// dunno exactly what a and b are, but this seems to work
-					if(b == 0) // TODO: check it's actually there?
-						objs[a].taken = Math.floor(time/.01455976568094950714);
-			});
+				recReader.event(x, function(time, info, type){
+					if(type == 0) // TODO: check it's actually there?
+						if(objs.length > info && objs[info].type == "ap" && !("taken" in objs[info])) // TODO: maybe track gravity here?
+							applesTaken.push([objs[info].taken = Math.floor(time/.01455976568094950714), applesTaken.length + 1]);
+				});
 		}();
 
 		return {
+			appleCount: function(){
+				return appleCount;
+			},
+
+			applesTaken: function(frame){
+				for(var x = 0; x < applesTaken.length; x++)
+					if(applesTaken[x][0] >= frame)
+						break;
+				return x? applesTaken[x - 1][1] : 0;
+			},
+
 			draw: function(canv, lgr, frame, x, y, scale){
 				canv.save();
 				canv.scale(scale, scale);
@@ -59,6 +74,9 @@ define([], function(){
 							break;
 						case "fl":
 							lgr.qexit.frame(canv, frame%50, 50);
+							break;
+						case "ki":
+							lgr.qkiller.frame(canv, frame%33, 33);
 							break;
 					}
 					canv.restore();

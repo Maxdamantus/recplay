@@ -1,4 +1,8 @@
 define([], function(){
+	function hypot(a, b){
+		return Math.sqrt(a*a + b*b);
+	}
+
 	return function levRender(reader){
 		var polyTree = [];
 		var grassPolys = [];
@@ -67,9 +71,147 @@ define([], function(){
 				addPoly(poly, polyTree);
 		});
 
+		var pictures = window.pics = function(){
+			var o = [];
+			var count = reader.picCount();
+			for(var x = 0; x < count; x++){
+				var pic = reader.pic_(x);
+				for(var n = 0; n < o.length && o[n][0].depth > pic.dist; n++);
+				if(n >= o.length || o[n][0].dist != pic.dist)
+					o.splice(n, 0, []);
+				o[n].push(pic);
+			}
+			return o;
+		}();
+
+		function renderGrassPoly(canv, lgr, scale, poly){
+			canv.beginPath();
+			canv.moveTo(poly[0][0]*scale, poly[0][1]*scale);
+			for(var z = 0; z < poly.length; z++)
+				canv.lineTo(poly[z][0]*scale, poly[z][1]*scale);
+			canv.closePath();
+			canv.strokeStyle = "green";
+			canv.stroke();
+		}
+
+		function renderGrassPoly_(canv, lgr, x, y, w, h, scale, poly){
+			// the path selection is demonstrably wrong, but it probably works in all reasonable cases.
+			// it draws along the path from the left-most vertex to the right-most vertex that doesn't
+			//   include the widest edge.
+			// haven't figured out exactly what Elma itself does.
+			var minX = Infinity, maxX = -Infinity, minXi, maxXi;
+			for(var z = 0; z < poly.length; z++){
+				// WARNING: funny code
+				if(minX != (minX = Math.min(minX, poly[z][0])))
+					minXi = z;
+				if(maxX != (maxX = Math.max(maxX, poly[z][0])))
+					maxXi = z;
+			}
+			var maxW = 0;
+			for(var z = minXi; z%poly.length != maxXi; z++)
+				maxW = Math.max(maxW, Math.abs(poly[z%poly.length][0] - poly[(z + 1)%poly.length][0]));
+			var dir = -1;
+			for(var z = poly.length + minXi; z%poly.length != maxXi; z--)
+				if(maxW != (maxW = Math.max(maxW, Math.abs(poly[z%poly.length][0] - poly[(z - 1)%poly.length][0]))))
+					dir = 1;
+			function yAt(x){
+				for(var z = poly.length + minXi; z%poly.length != maxXi; z += dir){
+					var from = poly[z%poly.length], to = poly[(z + dir)%poly.length];
+					if(from[0] <= x && x < to[0]){
+						var m = (to[1] - from[1])/(to[0] - from[0]);
+						return m*(x - from[0]) + from[1];
+					}
+				}
+			}
+			var curX = poly[minXi][0]*scale, curY = poly[minXi][1]*scale;
+			var gUps = lgr.grassUp(), gDowns = lgr.grassDown();
+			while(curX < maxX*scale){
+				var bestD = Infinity, bestA, bestI;
+				for(var a = 0; a < gUps.length; a++){
+					if(curX + gUps[a].width >= maxX*scale)
+						continue;
+					var dist = Math.abs(yAt((curX + gUps[a].width)/scale)*scale - (curY - (gUps[a].height - 41)));
+					if(dist < bestD){
+						bestD = dist;
+						bestA = gUps;
+						bestI = a;
+					}
+				}
+				for(var a = 0; a < gDowns.length; a++){
+					if(curX + gDowns[a].width >= maxX*scale)
+						continue;
+					var dist = Math.abs(yAt((curX + gDowns[a].width)/scale)*scale - (curY + (gDowns[a].height - 41)));
+					if(dist < bestD){
+						bestD = dist;
+						bestA = gDowns;
+						bestI = a;
+					}
+				}
+				if(!bestA){
+					curX++;
+					continue;
+				}
+				var fall = (bestA[bestI].height - 41)*(bestA == gUps? -1 : 1);
+
+				// TODO: might be worth skipping rendering bits here
+				canv.save();
+					canv.beginPath();
+					var fcx = Math.floor(curX), fcy = Math.floor(curY + fall);
+					var fcyTop = Math.floor(curY) - Math.ceil((bestA[bestI].height - fall)/2);
+					canv.moveTo(fcx, fcyTop - scale);
+					for(var xl = 0; xl < bestA[bestI].width; xl++){
+						canv.lineTo(fcx + xl, fcyTop + bestA[bestI].borders[xl]);
+						canv.lineTo(fcx + xl + 1, fcyTop + bestA[bestI].borders[xl]);
+					}
+					canv.lineTo(fcx + xl, fcyTop - scale);
+					canv.closePath();
+					canv.strokeStyle = "black";
+					canv.clip();
+					var ox = Math.floor(curX), oy = Math.floor(curY + fall) - scale;
+					var blockW = lgr.picts.qgrass.width, blockH = lgr.picts.qgrass.height; // TODO: this, in lgr?
+					var offsX = fcx >= 0? fcx%blockW : blockW - -fcx%blockW;
+					var offsY = fcy >= 0? fcy%blockH : blockH - -fcy%blockH;
+					canv.translate(fcx - offsX, fcy - scale - offsY); // TODO
+					lgr.picts.qgrass.repeat(canv, blockH*2 + scale*2, blockH*2 + scale*2); // TODO
+				canv.restore();
+
+				canv.save();
+					canv.translate(fcx, fcyTop);
+					bestA[bestI].drawAt(canv);
+				canv.restore();
+
+				curX += bestA[bestI].width;
+				curY += fall;
+			}
+			for(var z = poly.length + minXi; window.dbg && z%poly.length != maxXi; z += dir){
+				canv.beginPath();
+				var from = poly[z%poly.length], to = poly[(z + dir)%poly.length];
+				canv.moveTo(from[0]*scale, from[1]*scale);
+				canv.lineTo(to[0]*scale, to[1]*scale);
+				canv.strokeStyle = "red";
+				canv.stroke();
+			}
+		}
+
 		// (x, y)–(x + w, y + h): viewport in Elma dimensions
 		function draw(canv, lgr, x, y, w, h, scale){
 			canv.save();
+
+			void function(){
+				function pic(picture, texture, mask, vx, vy, dist, clipping){
+					picture = lgr.picts[picture];
+					if(!picture || !picture.draw)
+						return;
+					canv.save();
+					canv.translate((-x + vx)*scale, (-y + vy)*scale);
+					canv.scale(scale/48, scale/48);
+					picture.drawAt(canv);
+					canv.restore();
+				}
+				var pc = reader.picCount();
+				for(var z = 0; z < pc; z++)
+					reader.pic(z, pic);
+			}();
 
 			canv.beginPath();
 			canv.moveTo(0, 0);
@@ -98,8 +240,22 @@ define([], function(){
 					lgr.ground.repeat(canv, pw + blockW*2, ph + blockH*2);
 				canv.restore();
 			}();
+			canv.translate(-x*scale, -y*scale);
+			grassPolys.forEach(function(poly){
+				renderGrassPoly_(canv, lgr, x, y, w, h, scale, poly);
+			});
 
 			canv.restore();
+
+			canv.save();
+			canv.translate(-x*scale, -y*scale);
+/*
+			grassPolys.forEach(function(poly){
+				//renderGrassPoly(canv, lgr, scale, poly);
+				renderGrassPoly_(canv, lgr, x, y, w, h, scale, poly);
+			});*/
+			canv.restore();
+
 
 			/*canv.strokeStyle = "#ff0000";
 			canv.strokeRect(0, 0, w*scale, h*scale);*/

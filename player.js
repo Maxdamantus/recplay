@@ -14,9 +14,12 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 		var replays = [], levRn = levRender(levRd), levDraw = levRn.cached(2, makeCanvas);
 		var lastFrame = 0;
 		var refFrame = 0, refTime = Date.now();
+		var invalidate = false;
 
 		var focus = true; // whether focus is on replays[0]
 		var offsX = 0, offsY = 0; // offset from start or replays[0]
+
+		var playing = true;
 
 		var startX = 0, startY = 0;
 		void function(){
@@ -30,8 +33,13 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 				});
 		}();
 
-		var scale100 = 100; // 100*scale, where 1 Elma unit length is 48 px
-		var speed100 = 100; // 100*speed, where 1 is normal speed, -1 is reversed
+		var scale = 1; // of Elma units, where 1 Elma unit is 48 px
+		var speed = 1; // where 1 is normal speed, -1 is reversed
+
+		function setRef(){
+			refFrame = lastFrame;
+			refTime = Date.now();
+		}
 
 		function calcFrameCount(){
 			if(replays.length == 0)
@@ -49,20 +57,47 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 			return Math.min(lastFrame, max);
 		}
 
+		function setSpeed(n){
+			if(n == 0)
+				return;
+			setRef();
+			console.log(n);
+			return speed = n;
+		}
+
+		function setScale(n){
+			if(n == 0)
+				return;
+			setRef();
+			console.log(n);
+			return scale = n;
+		}
+
+		// (w, h), size of canvas
+		function inputClick(x, y, w, h){
+			changeFocus();
+		}
+
+		function changeFocus(){
+			replays.unshift(replays.pop());
+			invalidate = true;
+		}
+
 		return {
 			draw: function(canv, x, y, w, h, onlyMaybe){
-				var curFrame = refFrame + (Date.now() - refTime)*speed100*30/1000/100;
+				var curFrame = refFrame + playing*(Date.now() - refTime)*speed*30/1000;
 				if(replays.length > 0){
-					if(curFrame >= frameCount){
-						curFrame = refFrame = 0;
+					while(frameCount && curFrame >= frameCount){
+						curFrame = refFrame = curFrame - frameCount;
 						refTime = Date.now();
-					}else if(curFrame < 0){
-						curFrame = refFrame = frameCount - 1;
+					}
+					while(frameCount && curFrame < 0){
+						curFrame = refFrame = frameCount + curFrame;
 						refTime = Date.now();
 					}
 				}
 
-				if(onlyMaybe && lastFrame == curFrame)
+				if(onlyMaybe && lastFrame == curFrame && !invalidate)
 					return;
 				lastFrame = curFrame;
 
@@ -89,7 +124,7 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 					centreY += startY;
 				}
 
-				var escale = 48*scale100/100;
+				var escale = 48*scale;
 				var ex = centreX - w/escale/2, ey = centreY - h/escale/2;
 				var ew = w/escale, eh = w/escale;
 
@@ -106,33 +141,57 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 					var csec = pad(2, t%100); t = Math.floor(t/100);
 					var sec = pad(2, t%60); t = Math.floor(t/60);
 					canv.fillText(t + ":" + sec + "." + csec, 10, 24);
+					canv.fillText(replays[0].objRn.applesTaken(lastFrame) + "/" + replays[0].objRn.appleCount(), 10, 38);
+					canv.fillRect(w*lastFrame/replays[0].rd.frameCount() - 2.5, 0, 5, 12);
 				}
+				invalidate = false;
 
 				canv.restore();
 			},
 
 			addReplay: function(recRd){
-				replays.unshift({ rd: recRd, rn: recRender(recRd), objRn: objRender(levRd, recRd) });
+				if(replays.length == 0)
+					setRef();
+				replays.push({ rd: recRd, rn: recRender(recRd), objRn: objRender(levRd, recRd) });
 				frameCount = calcFrameCount();
+				invalidate = true;
 			},
 
-			changeFocus: function(){
-				replays.unshift(replays.pop());
+			changeFocus: changeFocus,
+
+			inputKey: function(key){
+				switch(key){
+					case "space":
+						playing = !playing;
+						setRef();
+						break;
+					case "[":
+						setSpeed(speed*0.8); // 0.8^n is actually representable
+						break;
+					case "]":
+						setSpeed(speed/0.8);
+						break;
+					case "backspace":
+						setSpeed(signum(speed));
+						break;
+					case "w":
+						setScale(scale*0.8);
+						break;
+					case "e":
+						setScale(scale/0.8);
+						break;
+					case "right":
+						lastFrame += 30*2.5*speed;
+						setRef();
+						break;
+					case "left":
+						lastFrame -= 30*2.5*speed;
+						setRef();
+						break;
+				}
 			},
 
-			setSpeed100: function(n){
-				refFrame = lastFrame;
-				refTime = Date.now();
-				return speed100 = n;
-			},
-
-			getSpeed100: function(){ return speed100; },
-
-			setScale100: function(n){
-				return scale100 = n;
-			},
-
-			getScale100: function(){ return scale100; }
+			inputClick: inputClick
 		};
 	};
 });

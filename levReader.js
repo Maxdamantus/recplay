@@ -52,7 +52,9 @@ define(["./binReader"], function(binReader){
 		}();
 		var offsPics = offsPicCount + 8;
 
-		return {
+		var obj, pic; // initialised in the object literal :\
+
+		return window.lrd = {
 			rightType: function(){
 				br.seek(offsType);
 				return br.seq(5) == "POT14";
@@ -121,7 +123,7 @@ define(["./binReader"], function(binReader){
 				}
 			},
 
-			obj: function(n, onFlower, onApple, onKiller, onStart){ // onError? maybe
+			obj: obj = function(n, onFlower, onApple, onKiller, onStart){ // onError? maybe
 				br.seek(offsObjs + n*((8 + 8) + (4 + 4 + 4)));
 				var vx = br.binFloat64le(), vy = br.binFloat64le();
 				var obj = br.word32le(), grav = br.word32le(), anim = br.word32le();
@@ -134,12 +136,41 @@ define(["./binReader"], function(binReader){
 				}
 			},
 
-			pic: function(n, onPic){
+			obj_: function(n){
+				function h(s){
+					return function(vx, vy, grav, anim){
+						var o = { type: s, x: vx, y: vy };
+						if(grav !== undefined){
+							o.grav = grav;
+							o.anim = anim;
+						}
+						return o;
+					};
+				}
+
+				return obj(n, h("flower"), h("apple"), h("killer"), h("start"));
+			},
+
+			pic: pic = function(n, onPic){
 				br.seek(offsPics + n*(10 + 10 + 10 + 8 + 8 + 4 + 4));
 				var picture = br.pstring(10), texture = br.pstring(10), mask = br.pstring(10);
 				var vx = br.binFloat64le(), vy = br.binFloat64le();
 				var dist = br.word32le(), clipping = br.word32le();
 				return onPic(picture, texture, mask, vx, vy, dist, clipping);
+			},
+
+			pic_: function(n){
+				return pic(n, function(picture, texture, mask, vx, vy, dist, clipping){
+					return {
+						picture: picture,
+						texture: texture,
+						mask: mask,
+						x: vx,
+						y: vy,
+						dist: dist,
+						clipping: clipping
+					};
+				});
 			}
 		};
 	};
