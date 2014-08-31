@@ -40,7 +40,12 @@ define(["./binReader"], function(binReader){
 		var eventCount = gticker(4, 1, br.word32le)(0)(0); // heh
 		var offsEvents = br.pos();
 
-		return {
+		function event(n, fn){
+			br.seek(offsEvents + n*(8 + 4 + 4));
+			return fn(br.binFloat64le(), br.word16le(), br.byte(), br.byte(), br.binFloat32le());
+		}
+
+		return window.rrd = {
 			frameCount: function(){
 				return frameCount;
 			},
@@ -64,10 +69,17 @@ define(["./binReader"], function(binReader){
 				return eventCount;
 			},
 
-			event: function(n, fn){
-				br.seek(offsEvents + n*(8 + 4 + 4));
-				fn(br.binFloat64le(), br.word32le(), br.word32le());
-				//fn(br.binFloat64le(), br.byte(), br.byte(), br.byte(), br.byte(), br.byte(), br.byte(), br.byte(), br.byte());
+			event: event,
+
+			event_: function(n){
+				return event(n, function(time, info, type, _, dunno){
+					return {
+						time: time,
+						info: info,
+						type: type,
+						dunno: dunno
+					};
+				});
 			}
 		};
 	};

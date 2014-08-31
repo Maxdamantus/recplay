@@ -31,13 +31,12 @@ define([], function(){
 			var ec = reader.eventCount();
 			var o = [];
 			for(var e = 0; e < ec; e++)
-				reader.event(e, function(time, a, b){
-					if(a & 255 == 255)
-						switch(a >> 8){
-							case 1791: // right volt
+				reader.event(e, function(time, info, type, a, b){
+						switch(type){
+							case 6: // right volt
 								o.push([Math.floor(time/.01455976568094950714), true]);
 								break;
-							case 2047: // left volt
+							case 7: // left volt
 								o.push([Math.floor(time/.01455976568094950714), false]);
 								break;
 						}
@@ -97,7 +96,7 @@ define([], function(){
 		// (x, y): top left in Elma coordinates
 		function draw(canv, lgr, frame, x, y, scale){
 			canv.save();
-			canv.translate(Math.round(scale*(-x + bikeXi(frame))), Math.round(scale*(-y - bikeYi(frame))));
+			canv.translate(/*Math.ceil*/(scale*(-x + bikeXi(frame))), /*Math.ceil*/(scale*(-y - bikeYi(frame))));
 			canv.scale(scale, scale);
 			canv.beginPath();
 
