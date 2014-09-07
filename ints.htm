@@ -1,0 +1,29 @@
+<html>
+  <head>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/es5-shim/4.0.3/es5-shim.js"></script>
+    <SCRIpt src="amd.js"></script>
+    <script>
+      window.onload = function(){
+      	require(["./controller"], function(controller){
+      		controller("ints/qwquu001.lev", "./images", document.getElementById("recplay"), document)(function(cnt){
+      			window.cnt = cnt;
+      			for(var x = 1; x <= 55; x++)
+      				try{ throw x; }catch(x){
+      					var a = document.body.appendChild(document.createElement("a"));
+      					a.href = "#";
+      					a.onclick = function(e){
+      						cnt.loadLevel("ints/qwquu0" + (x < 10? "0" : "") + x + ".lev");
+      						e.preventDefault();
+      					};
+      					a.appendChild(document.createTextNode(x));
+      					document.body.appendChild(document.createTextNode(" "));
+      				}
+      		});
+      	});
+      };
+    </script>
+  </head>
+  <body>
+    <div id="recplay"></div>
+  </body>
+</html>

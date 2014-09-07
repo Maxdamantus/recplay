@@ -7,7 +7,7 @@ transcol(){
 pictures=()
 n=0
 
-cat "$1"/PICTURES.LST | while read picline; do
+cat "$1"/PICTURES.LST | sed 's/\r$//; $s/$/\n/' | while read picline; do
 	picline="$(sed 's/ \+/ /g' <<< "$picline")"
 	name="$(cut -d\  -f 1 <<< "$picline" | tr a-z A-Z)"
 	pictures[$((n++))]="$name"

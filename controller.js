@@ -1,18 +1,17 @@
 define(["./levReader", "./recReader", "./get", "./lgr", "./player"], function(levReader, recReader, get, lgr, player){
 	return function(levName, imagesPath, elem, document){
-		return function(cont){
-			var canvase = elem.appendChild(document.createElement("canvas"));
-			canvase.width = "1280";
-			canvase.height = "600";
-			var canvas = canvase.getContext("2d");
-			get(levName, function(lev){
-				function mkCanv(w, h){
-					var o = document.createElement("canvas");
-					o.width = w;
-					o.height = h;
-					return o;
-				}
+		function mkCanv(w, h){
+			var o = document.createElement("canvas");
+			o.width = w;
+			o.height = h;
+			return o;
+		}
 
+		return function(cont){
+			var canvase = mkCanv(1024, 600);
+			var canvas = canvase.getContext("2d");
+			elem.appendChild(canvase);
+			get(levName, function(lev){
 				var pl = player(levReader(lev), window.lgr = lgr(imagesPath, function(){
 					return document.createElement("img");
 				}, mkCanv), mkCanv);
@@ -31,34 +30,58 @@ define(["./levReader", "./recReader", "./get", "./lgr", "./player"], function(le
 					}
 				};
 
-				document.addEventListener("keydown", listener);
+				document.addEventListener("keydown", listener, true);
 			
 				elem.insertBefore(document.createElement("br"), canvase);
 
-				function anim(){
-					pl.draw(canvas, 0, 0, canvase.width, canvase.height, true);
-					// note: this actually uses 4/3 times the CPU on Chromium as setInterval
-					requestAnimationFrame(anim);
-					//setTimeout(anim, 1000/30);
-				}
-				anim();
-	//			setInterval(anim, 1000/60);
+				console.log(window.requestAnimationFrame);
 
-	/*			setInterval(function(){
-					//pl.draw(canvas, canvase.width*0.25, canvase.height*0.25, canvase.width/2, canvase.height/2);
-					if(raf === null)
-						raf = requestAnimationFrame(anim);
-				}, 30);*/
+				var loop = typeof requestAnimationFrame != "undefined"? function(fn){
+					void function go(){
+						fn();
+						requestAnimationFrame(go);
+					}();
+				} : function(fn){
+					var fps = 30;
+					setInterval(fn, 1000/fps);
+				};
+
+				function draw(){
+					pl.draw(canvas, 0, 0, canvase.width, canvase.height, true);
+				}
+
+				loop(draw);
 
 				canvase.onclick = function(e){
-					pl.inputClick(); // TODO
+					pl.inputClick(e.clientX, e.clientY, canvase.width, canvase.height); // TODO
 					e.preventDefault();
+				};
+
+				canvase.onmousedown = function(e){
+					var cont = pl.inputDrag(e.clientX, e.clientY, canvase.width, canvase.height); // TODO
+
+					canvase.onmousemove = function(e){
+						cont(e.clientX, e.clientY); // TODO
+					};
+
+					canvase.onmouseup = function(){
+						canvase.onmousemove = undefined;
+						canvase.onmouseup = undefined;
+					};
 				};
 
 				cont({
 					loadReplay: function(recName){
 						get(recName, function(rec){
 							pl.addReplay(recReader(rec));
+						});
+					},
+
+					loadLevel: function(levName, cont){
+						get(levName, function(lev){
+							pl.changeLevel(levReader(lev));
+							if(cont)
+								cont();
 						});
 					}
 				});

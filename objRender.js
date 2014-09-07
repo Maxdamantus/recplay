@@ -32,6 +32,8 @@ define([], function(){
 
 		var applesTaken = [];
 		void function(){
+			if(!recReader)
+				return;
 			var count = recReader.eventCount();
 			for(var x = 0; x < count; x++)
 				recReader.event(x, function(time, info, type){

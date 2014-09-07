@@ -156,6 +156,7 @@ define(["./binReader"], function(binReader){
 				var picture = br.pstring(10), texture = br.pstring(10), mask = br.pstring(10);
 				var vx = br.binFloat64le(), vy = br.binFloat64le();
 				var dist = br.word32le(), clipping = br.word32le();
+				clipping = ["u", "g", "s"][clipping];
 				return onPic(picture, texture, mask, vx, vy, dist, clipping);
 			},
 

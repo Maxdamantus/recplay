@@ -85,14 +85,17 @@ define([], function(){
 			var count = reader.picCount();
 			for(var x = 0; x < count; x++){
 				var pic = reader.pic_(x);
-				for(var n = 0; n < o.length && o[n][0].depth > pic.dist; n++);
+				// TODO: defaults
+				for(var n = 0; n < o.length && o[n][0].dist > pic.dist; n++);
 				if(n >= o.length || o[n][0].dist != pic.dist)
 					o.splice(n, 0, []);
 				o[n].push(pic);
 			}
 			return o;
 		}();
+		console.log(pictures);
 
+		var grassC;
 		function renderGrassPoly(canv, lgr, x, y, w, h, scale, poly){
 			x = x*scale; y = y*scale; w = w*scale; h = h*scale;
 			// the path selection is demonstrably wrong, but it probably works in all reasonable cases.
@@ -204,26 +207,55 @@ define([], function(){
 				canv.stroke();
 			}
 		}
+		
+		function drawPictures(canv, scale, clipping){
+			function draw(pic){
+				// TODO: are masks specifically for textures? dunno
+				var img = lgr.picts[pic.picture];
+				if(pic.clipping != clipping)
+					return;
+				if(img && img.draw){
+					canv.save();
+						canv.translate(pic.x*scale, pic.y*scale);
+						canv.scale(scale/48, scale/48);
+						img.drawAt(canv);
+					canv.restore();
+				}
+				img = lgr.picts[pic.texture];
+				var mask = lgr.picts[pic.mask];
+				if(img && img.draw && mask && mask.draw){
+					// TODO: scale textures, fix otherwise
+					var px = Math.round(pic.x*scale), py = Math.round(pic.y*scale);
+					var offsX = px >= 0? px%img.width : img.width - -px%img.width;
+					var offsY = py >= 0? py%img.height : img.height - -py%img.height;
+					mask.touch();
+					canv.save();
+						canv.translate(pic.x*scale, pic.y*scale);
+						canv.beginPath();
+						canv.moveTo(0, 0);
+						canv.lineTo(mask.width*scale/48, 0);
+						canv.lineTo(mask.width*scale/48, mask.height*scale/48);
+						canv.lineTo(0, mask.height*scale/48);
+						canv.clip();
+						canv.translate(-offsX, -offsY);
+						img.repeat(canv, offsX + mask.width*scale/48, offsY + mask.height*scale/48);
+					canv.restore();
+				}
+			}
+
+			pictures.forEach(function(layer){
+				layer.forEach(draw);
+			});
+		}
 
 		// (x, y)–(x + w, y + h): viewport in Elma dimensions
 		function draw(canv, lgr, x, y, w, h, scale){
 			canv.save();
+				canv.translate(-x*scale, -y*scale);
+				drawPictures(canv, scale, "s"); // sky
+			canv.restore();
 
-			void function(){
-				function pic(picture, texture, mask, vx, vy, dist, clipping){
-					picture = lgr.picts[picture];
-					if(!picture || !picture.draw)
-						return;
-					canv.save();
-					canv.translate((-x + vx)*scale, (-y + vy)*scale);
-					canv.scale(scale/48, scale/48);
-					picture.drawAt(canv);
-					canv.restore();
-				}
-				var pc = reader.picCount();
-				for(var z = 0; z < pc; z++)
-					reader.pic(z, pic);
-			}();
+			canv.save();
 
 			canv.beginPath();
 			canv.moveTo(0, 0);
@@ -242,19 +274,28 @@ define([], function(){
 			canv.translate(x*scale, y*scale);
 			canv.clip(); // clip isn't antialiased in Chromium—different with destination-out
 			void function(){
+				// TODO: check that it's not accessing something it shouldn't
+				var img = lgr.picts[reader.ground()] || lgr.picts.ground;
 				var px = Math.floor(x*scale), py = Math.floor(y*scale);
 				var pw = Math.floor(w*scale), ph = Math.floor(h*scale);
-				var blockW = 280, blockH = 31;
-				var offsX = x >= 0? px%blockW : blockW - -px%blockW;
-				var offsY = y >= 0? py%blockH : blockH - -py%blockH;
+				var offsX = x >= 0? px%img.width : img.width - -px%img.width;
+				var offsY = y >= 0? py%img.height : img.height - -py%img.height;
 				canv.save();
-					canv.translate(-blockW - offsX, -blockH - offsY);
-					lgr.ground.repeat(canv, pw + blockW*2, ph + blockH*2);
+					canv.translate(-img.width - offsX, -img.height - offsY);
+					img.repeat(canv, pw + img.width*2, ph + img.height*2);
 				canv.restore();
 			}();
+
+//			canv.restore();
+			canv.save();
+				canv.translate(-x*scale, -y*scale);
+				drawPictures(canv, scale, "g"); // ground
+			canv.restore();
+
 			canv.translate(-x*scale, -y*scale);
+			canv.scale(scale/48, scale/48);
 			grassPolys.forEach(function(poly){
-				renderGrassPoly(canv, lgr, x, y, w, h, scale, poly);
+				renderGrassPoly(canv, lgr, x, y, w, h, 48, poly);
 			});
 
 			canv.restore();
@@ -268,6 +309,10 @@ define([], function(){
 			});*/
 			canv.restore();
 
+			canv.save();
+				canv.translate(-x*scale, -y*scale);
+				drawPictures(canv, scale, "u"); // unclipped
+			canv.restore();
 
 			canv.strokeStyle = "#ff0000";
 			if(window.dbg)
@@ -345,17 +390,16 @@ define([], function(){
 			draw: draw,
 			cached: cached,
 			drawSky: function(canv, lgr, x, y, w, h, scale){
+				// TODO: check that it's not accessing something it shouldn't
+				var img = lgr.picts[reader.sky()] || lgr.picts.sky;
 				x = Math.floor(x*scale/3);
-				y = Math.floor(y*scale/3);
 				w *= scale;
 				h *= scale;
-				if((x = x%640) < 0)
-					x = 640 + x;
-				if((y = y%480) < 0)
-					y = 480 + y;
+				if((x = x%img.width) < 0)
+					x = img.width + x;
 				canv.save();
-				canv.translate(-x, -480 + y);
-				lgr.sky.repeat(canv, w + 640, h + 480);
+				canv.translate(-x, 0);
+				img.repeat(canv, w + img.width, h);
 				canv.restore();
 			}
 		};

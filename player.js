@@ -11,30 +11,53 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 	}
 
 	return function(levRd, lgr, makeCanvas){
-		var replays = [], levRn = levRender(levRd), levDraw = levRn.cached(2, makeCanvas);
-		var lastFrame = 0;
-		var refFrame = 0, refTime = Date.now();
-		var invalidate = false;
+		var replays, levRn, levDraw;
+		var lastFrame;
+		var refFrame, refTime;
+		var invalidate;
 
-		var focus = true; // whether focus is on replays[0]
-		var offsX = 0, offsY = 0; // offset from start or replays[0]
+		var focus; // whether focus is on replays[0]
+		var offsX, offsY; // offset from start or replays[0]
 
-		var playing = true;
+		var playing;
 
-		var startX = 0, startY = 0;
-		void function(){
-			function nvm(){}
+		var startX, startY;
 
-			var l = levRd.objCount();
-			for(var x = 0; x < l; x++)
-				levRd.obj(x, nvm, nvm, nvm, function(x, y){
-					startX = x;
-					startY = y;
-				});
-		}();
+		var scale; // of Elma units, where 1 Elma unit is 48 px
+		var speed; // where 1 is normal speed, -1 is reversed
 
-		var scale = 1; // of Elma units, where 1 Elma unit is 48 px
-		var speed = 1; // where 1 is normal speed, -1 is reversed
+		var defaultObjRn; // for when not spying
+
+		reset();
+
+		function reset(){
+			replays = []; levRn = levRender(levRd); levDraw = levRn.cached(2, makeCanvas);
+			lastFrame = 0;
+			refFrame = 0; refTime = Date.now();
+			invalidate = true;
+
+			focus = true;
+			offsX = 0; offsY = 0;
+
+			playing = true;
+
+			startX = 0; startY = 0;
+			void function(){
+				function nvm(){}
+
+				var l = levRd.objCount();
+				for(var x = 0; x < l; x++)
+					levRd.obj(x, nvm, nvm, nvm, function(x, y){
+						startX = x;
+						startY = y;
+					});
+			}();
+
+			scale = 1;
+			speed = 1;
+
+			defaultObjRn = objRender(levRd);
+		}
 
 		function setRef(){
 			refFrame = lastFrame;
@@ -73,17 +96,38 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 			return scale = n;
 		}
 
+		var dragging = false;
+
 		// (w, h), size of canvas
 		function inputClick(x, y, w, h){
+			dragging = false;
 			changeFocus();
 		}
 
+		function inputDrag(x, y, w, h){
+			dragging = true;
+			var firstSx = startX, firstSy = startY;
+			// to be called on each update—terminated by .inputClick
+			return function(cx, cy){
+				if(!dragging)
+					return;
+				startX = firstSx - (cx - x)/(48*scale);
+				startY = firstSy - (cy - y)/(48*scale);
+			};
+		}
+
 		function changeFocus(){
-			replays.unshift(replays.pop());
+			if(replays.length > 0)
+				replays.unshift(replays.pop());
 			invalidate = true;
 		}
 
 		return {
+			changeLevel: function(levRd_){
+				levRd = levRd_;
+				reset();
+			},
+
 			draw: function(canv, x, y, w, h, onlyMaybe){
 				var curFrame = refFrame + playing*(Date.now() - refTime)*speed*30/1000;
 				if(replays.length > 0){
@@ -132,6 +176,8 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 				levDraw(canv, lgr, ex, ey, ew, eh, escale);
 				if(focus && replays.length > 0)
 					replays[0].objRn.draw(canv, lgr, cap(replays[0].rd.frameCount() - 1), ex, ey, escale);
+				else
+					defaultObjRn.draw(canv, lgr, lastFrame, ex, ey, escale);
 				for(var z = replays.length - 1; z >= 0; z--)
 					replays[z].rn.draw(canv, lgr, cap(replays[z].rd.frameCount() - 1), ex, ey, escale);
 				if(focus && replays.length > 0){
@@ -191,7 +237,8 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 				}
 			},
 
-			inputClick: inputClick
+			inputClick: inputClick,
+			inputDrag: inputDrag
 		};
 	};
 });
