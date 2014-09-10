@@ -12,7 +12,7 @@ define([], function(){
 			y2 + h2 >= y1);
 	}
 
-	return function levRender(reader){
+	return function levRender(reader, lgr){
 		var polyTree = [];
 		var grassPolys = [];
 
@@ -80,7 +80,7 @@ define([], function(){
 				addPoly(poly, polyTree);
 		});
 
-		var pictures = window.pics = function(){
+		var pictures = function(){
 			var o = [];
 			var count = reader.picCount();
 			for(var x = 0; x < count; x++){
@@ -93,121 +93,184 @@ define([], function(){
 			}
 			return o;
 		}();
-		console.log(pictures);
 
-		var grassC;
-		function renderGrassPoly(canv, lgr, x, y, w, h, scale, poly){
-			x = x*scale; y = y*scale; w = w*scale; h = h*scale;
-			// the path selection is demonstrably wrong, but it probably works in all reasonable cases.
-			// it draws along the path from the left-most vertex to the right-most vertex that doesn't
-			//   include the widest edge.
-			// haven't figured out exactly what Elma itself does.
-			var minX = Infinity, maxX = -Infinity, minXi, maxXi;
-			for(var z = 0; z < poly.length; z++){
-				// WARNING: funny code
-				if(minX != (minX = Math.min(minX, poly[z][0])))
-					minXi = z;
-				if(maxX != (maxX = Math.max(maxX, poly[z][0])))
-					maxXi = z;
-			}
-			var maxW = 0;
-			for(var z = minXi; z%poly.length != maxXi; z++)
-				maxW = Math.max(maxW, Math.abs(poly[z%poly.length][0] - poly[(z + 1)%poly.length][0]));
-			var dir = -1;
-			for(var z = poly.length + minXi; z%poly.length != maxXi; z--)
-				if(maxW != (maxW = Math.max(maxW, Math.abs(poly[z%poly.length][0] - poly[(z - 1)%poly.length][0]))))
-					dir = 1;
-			function yAt(x){
-				for(var z = poly.length + minXi; z%poly.length != maxXi; z += dir){
-					var from = poly[z%poly.length], to = poly[(z + dir)%poly.length];
-					if(from[0] <= x && x < to[0]){
-						var m = (to[1] - from[1])/(to[0] - from[0]);
-						return m*(x - from[0]) + from[1];
-					}
-				}
-			}
-			var curX = poly[minXi][0]*scale, curY = poly[minXi][1]*scale;
-			var gUps = lgr.grassUp(), gDowns = lgr.grassDown();
-			canv.beginPath();
-			canv.moveTo(curX, curY - scale);
-			canv.lineTo(curX, curY);
-			while(curX < maxX*scale){
-				var bestD = Infinity, bestA, bestI;
-				for(var a = 0; a < gUps.length; a++){
-					if(curX + gUps[a].width >= maxX*scale)
-						continue;
-					var dist = Math.abs(yAt((curX + gUps[a].width)/scale)*scale - (curY - (gUps[a].height - 41)));
-					if(dist < bestD){
-						bestD = dist;
-						bestA = gUps;
-						bestI = a;
-					}
-				}
-				for(var a = 0; a < gDowns.length; a++){
-					if(curX + gDowns[a].width >= maxX*scale)
-						continue;
-					var dist = Math.abs(yAt((curX + gDowns[a].width)/scale)*scale - (curY + (gDowns[a].height - 41)));
-					if(dist < bestD){
-						bestD = dist;
-						bestA = gDowns;
-						bestI = a;
-					}
-				}
-				if(!bestA){
-					curX++;
-					continue;
-				}
-				var pict = bestA[bestI];
-				var fall = (pict.height - 41)*(bestA == gUps? -1 : 1);
-				var fcx = Math.floor(curX), fcy = Math.floor(curY + fall);
-				var fcyTop = Math.floor(curY) - Math.ceil((pict.height - fall)/2);
+		var grass = function(){
+			var root; // quad tree: T = null | { descs : [grassDesc] } | ([tl, tr, bl, br] : [T])
+			var rootW = 1; // length of top-level squares, all touching (0,0)
+			var minW = 1;
+			var maxImgW, maxImgH; // for overbounding in .traverse
 
-				var isVisible = rectsOverlap(fcx, fcyTop, pict.width, pict.height, x, y, w, h);
+			function dbgdraw(canv){
+				function draw_(tree){
+					canv.strokeRect(0, 0, 1, 1);
+					if(tree instanceof Array){
+						for(var y = 0; y < 2; y++)
+							for(var x = 0; x < 2; x++){
+								canv.save();
+									canv.scale(1/2, 1/2);
+									canv.translate(x, y);
+									draw_(tree[y*2 + x]);
+								canv.restore();
+							}
 
-				if(isVisible)
-					for(var xl = 0; xl < bestA[bestI].width; xl++){
-						canv.lineTo(fcx + xl, fcyTop + pict.borders[xl]);
-						canv.lineTo(fcx + xl + 1, fcyTop + pict.borders[xl]);
 					}
-				else
-					canv.lineTo(curX + pict.width, curY + fall);
+				}
 
 				canv.save();
-					canv.translate(fcx, fcyTop);
-					if(isVisible)
-						pict.drawAt(canv);
+					canv.translate(-rootW, -rootW);
+					canv.scale(2*rootW, 2*rootW);
+					canv.strokeStyle = "orange";
+					canv.lineWidth = 1/100;
+					draw_(root);
 				canv.restore();
-
-				curX += pict.width;
-				curY += fall;
-			}
-			canv.lineTo(curX, curY - scale);
-			// opposite direction—further deviation from strict Elma style
-			for(var z = poly.length + maxXi; z%poly.length != minXi; z -= dir){
-				var from = poly[z%poly.length];
-				canv.lineTo(from[0]*scale, from[1]*scale - scale);
 			}
 
-			canv.save();
-				canv.clip();
-				var ox = Math.floor(curX), oy = Math.floor(curY + fall) - scale;
-				var blockW = lgr.picts.qgrass.width, blockH = lgr.picts.qgrass.height; // TODO: this, in lgr?
-				var offsX = x >= 0? x%blockW : blockW - -x%blockW;
-				var offsY = y >= 0? y%blockH : blockH - -y%blockH;
-				canv.translate(x - offsX, y - offsY); // TODO
-				lgr.picts.qgrass.repeat(canv, w + blockW*2, h + blockH*2); // TODO
-			canv.restore();
-
-			for(var z = poly.length + minXi; window.dbg && z%poly.length != maxXi; z += dir){
-				canv.beginPath();
-				var from = poly[z%poly.length], to = poly[(z + dir)%poly.length];
-				canv.moveTo(from[0]*scale, from[1]*scale);
-				canv.lineTo(to[0]*scale, to[1]*scale);
-				canv.strokeStyle = "red";
-				canv.stroke();
+			function traverse_(tree, tx, ty, tw, x, y, w, h, fn){
+				if(tree === null)
+					return;
+				if("descs" in tree){ // leaf
+					tree.descs.forEach(fn);
+					return;
+				}
+				var n = 0;
+				for(var sy = 0; sy < 2; sy++)
+					for(var sx = 0; sx < 2; sx++){
+						var dx = sx == 0? -1 : 1;
+						var dy = sy == 0? -1 : 1;
+						if(rectsOverlap(x, y, w, h, tx - tw + sx*tw, ty - tw + sy*tw, tw, tw))
+							traverse_(tree[n], tx + dx*tw/2, ty + dy*tw/2, tw/2, x, y, w, h, fn);
+						n++;
+					}
 			}
-		}
-		
+
+			// assuming w and h are positive
+			function traverse(x, y, w, h, fn){
+				return traverse_(root, 0, 0, rootW, x - maxImgW, y - maxImgH, w + maxImgW, h + maxImgH, fn);
+			}
+
+			function add_(desc, tree, x, y, w){
+				if(tree === null)
+					return { descs: [desc] };
+				var dx = desc.x < x? -1 : 1;
+				var dy = desc.y < y? -1 : 1;
+				var quad = 2*(dy < 0? 0 : 1) + (dx < 0? 0 : 1);
+				// could alternatively make it pure here
+				if(tree instanceof Array){
+					tree[quad] = add_(desc, tree[quad], x + dx*w/2, y + dy*w/2, w/2);
+					return tree;
+				}
+				if(w < minW){
+					tree.descs.push(desc);
+					return tree;
+				}
+				var r = [null, null, null, null];
+				r[quad] = { descs: [desc] };
+				for(var z = 0; z < tree.descs.length; z++)
+					r = add_(tree.descs[z], r, x, y, w);
+				return r;
+			}
+
+			function add(desc){
+				while(Math.abs(desc.x) >= rootW || Math.abs(desc.y) >= rootW){
+					root[0] = [null, null, null, root[0]];
+					root[1] = [null, null, root[1], null];
+					root[2] = [null, root[2], null, null];
+					root[3] = [root[3], null, null, null];
+					rootW *= 2;
+				}
+				if(add_(desc, root, 0, 0, rootW) != root)
+					throw new Error("internal error");
+			}
+
+			function calc(){
+				root = [null, null, null, null];
+				maxImgW = maxImgH = 0;
+
+				grassPolys.forEach(function(p){
+					calcGrassPoly(48, p);
+				});
+
+				function calcGrassPoly(scale, poly){
+					// the path selection is demonstrably wrong, but it probably works in all reasonable cases.
+					// it draws along the path from the left-most vertex to the right-most vertex that doesn't
+					//   include the widest edge.
+					// haven't figured out exactly what Elma itself does.
+					var minX = Infinity, maxX = -Infinity, minXi, maxXi;
+					for(var z = 0; z < poly.length; z++){
+						// WARNING: funny code
+						if(minX != (minX = Math.min(minX, poly[z][0])))
+							minXi = z;
+						if(maxX != (maxX = Math.max(maxX, poly[z][0])))
+							maxXi = z;
+					}
+					var maxW = 0;
+					for(var z = minXi; z%poly.length != maxXi; z++)
+						maxW = Math.max(maxW, Math.abs(poly[z%poly.length][0] - poly[(z + 1)%poly.length][0]));
+					var dir = -1;
+					for(var z = poly.length + minXi; z%poly.length != maxXi; z--)
+						if(maxW != (maxW = Math.max(maxW, Math.abs(poly[z%poly.length][0] - poly[(z - 1)%poly.length][0]))))
+							dir = 1;
+					function yAt(x){
+						for(var z = poly.length + minXi; z%poly.length != maxXi; z += dir){
+							var from = poly[z%poly.length], to = poly[(z + dir)%poly.length];
+							if(from[0] <= x && x < to[0]){
+								var m = (to[1] - from[1])/(to[0] - from[0]);
+								return m*(x - from[0]) + from[1];
+							}
+						}
+					}
+
+					var curX = poly[minXi][0]*scale, curY = poly[minXi][1]*scale;
+					var gUps = lgr.grassUp(), gDowns = lgr.grassDown();
+					while(curX < maxX*scale){
+						var bestD = Infinity, bestA, bestI;
+						for(var a = 0; a < gUps.length; a++){
+							if(curX + gUps[a].width >= maxX*scale)
+								continue;
+							var dist = Math.abs(yAt((curX + gUps[a].width)/scale)*scale - (curY - (gUps[a].height - 41)));
+							if(dist < bestD){
+								bestD = dist;
+								bestA = gUps;
+								bestI = a;
+							}
+						}
+						for(var a = 0; a < gDowns.length; a++){
+							if(curX + gDowns[a].width >= maxX*scale)
+								continue;
+							var dist = Math.abs(yAt((curX + gDowns[a].width)/scale)*scale - (curY + (gDowns[a].height - 41)));
+							if(dist < bestD){
+								bestD = dist;
+								bestA = gDowns;
+								bestI = a;
+							}
+						}
+						if(!bestA){
+							curX++;
+							continue;
+						}
+						var pict = bestA[bestI];
+						var fall = (pict.height - 41)*(bestA == gUps? -1 : 1);
+						var fcx = Math.floor(curX), fcy = Math.floor(curY + fall);
+						var fcyTop = Math.floor(curY) - Math.ceil((pict.height - fall)/2);
+
+						maxImgW = Math.max(maxImgW, pict.width/scale);
+						maxImgH = Math.max(maxImgH, pict.height/scale);
+
+						add({ x: fcx/scale, y: fcyTop/scale, pict: pict });
+
+						curX += pict.width;
+						curY += fall;
+					}
+				}
+			}
+
+			return {
+				calc: calc,
+				traverse: traverse,
+				dbgdraw: dbgdraw
+			};
+		}();
+
 		function drawPictures(canv, scale, clipping){
 			function draw(pic){
 				// TODO: are masks specifically for textures? dunno
@@ -248,8 +311,15 @@ define([], function(){
 			});
 		}
 
+		var lgrIdent = {};
+
 		// (x, y)–(x + w, y + h): viewport in Elma dimensions
-		function draw(canv, lgr, x, y, w, h, scale){
+		function draw(canv, x, y, w, h, scale){
+			if(lgrIdent != lgr._ident){
+				grass.calc();
+				lgrIdent = lgr._ident;
+			}
+
 			canv.save();
 				canv.translate(-x*scale, -y*scale);
 				drawPictures(canv, scale, "s"); // sky
@@ -293,9 +363,47 @@ define([], function(){
 			canv.restore();
 
 			canv.translate(-x*scale, -y*scale);
-			canv.scale(scale/48, scale/48);
-			grassPolys.forEach(function(poly){
-				renderGrassPoly(canv, lgr, x, y, w, h, 48, poly);
+
+			canv.save();
+				canv.beginPath();
+				grass.traverse(x, y, w, h, function(grassDesc){
+					canv.save();
+						canv.translate(grassDesc.x*scale, grassDesc.y*scale);
+						var b = grassDesc.pict.borders;
+						canv.scale(scale/48, scale/48);
+						canv.moveTo(0, -24);
+						for(var z = 0; z < b.length; z++){
+							canv.lineTo(z, b[z] + 1);
+							canv.lineTo(z + 1, b[z] + 1);
+						}
+						canv.lineTo(grassDesc.pict.width, -24);
+						canv.closePath();
+					canv.restore();
+				});
+				canv.clip();
+
+				canv.translate(x*scale, y*scale);
+
+				void function(){
+					var img = lgr.picts.qgrass;
+					var px = Math.floor(x*scale), py = Math.floor(y*scale);
+					var pw = Math.floor(w*scale), ph = Math.floor(h*scale);
+					var offsX = x >= 0? px%img.width : img.width - -px%img.width;
+					var offsY = y >= 0? py%img.height : img.height - -py%img.height;
+					canv.save();
+						canv.translate(-img.width - offsX, -img.height - offsY);
+						img.repeat(canv, pw + img.width*2, ph + img.height*2);
+					canv.restore();
+				}();
+			canv.restore();
+
+
+			grass.traverse(x, y, w, h, function(grassDesc){
+				canv.save();
+					canv.translate(grassDesc.x*scale, grassDesc.y*scale);
+					canv.scale(scale/48, scale/48);
+					grassDesc.pict.drawAt(canv);
+				canv.restore();
 			});
 
 			canv.restore();
@@ -303,10 +411,6 @@ define([], function(){
 			canv.save();
 			canv.translate(-x*scale, -y*scale);
 
-/*			grassPolys.forEach(function(poly){
-				//renderGrassPoly(canv, lgr, scale, poly);
-				renderGrassPoly(canv, lgr, x, y, w, h, scale, poly);
-			});*/
 			canv.restore();
 
 			canv.save();
@@ -315,13 +419,21 @@ define([], function(){
 			canv.restore();
 
 			canv.strokeStyle = "#ff0000";
-			if(window.dbg)
+			if(window.dbg){
 				canv.strokeRect(0, 0, w*scale, h*scale);
+				if(window.dbg > 1){
+					canv.save();
+						canv.translate(-x*scale, -y*scale);
+						canv.scale(scale, scale);
+						grass.dbgdraw(canv);
+					canv.restore();
+				}
+			}
 		};
 
 		function cached(num, mkCanv){
 			var cscale, xp, yp, wp, hp;
-			var canvs = [], lgr, lgrIdent;
+			var canvs = [];
 
 			function update(which, canv){
 				var x = which%num, y = Math.floor(which/num);
@@ -329,17 +441,15 @@ define([], function(){
 				y = yp + y*hp;
 				var ctx = canv.getContext("2d");
 				ctx.clearRect(0, 0, canv.width, canv.height);
-				draw(ctx, lgr, x/cscale, y/cscale, wp/cscale, hp/cscale, cscale);
+				draw(ctx, x/cscale, y/cscale, wp/cscale, hp/cscale, cscale);
 			}
 
-			return function cachedDraw(canv, lgr_, x, y, w, h, scale){
-				lgr = lgr_;
+			return function cachedDraw(canv, x, y, w, h, scale){
 				w = Math.ceil(w*scale);
 				h = Math.ceil(h*scale);
 				x = Math.floor(x*scale);
 				y = Math.floor(y*scale);
 				if(lgr._ident != lgrIdent || scale != cscale || Math.ceil(w/(num - 1)) != wp || Math.ceil(h/(num - 1)) != hp || !rectsOverlap(xp, yp, wp*num, hp*num, x, y, w, h)){
-					lgrIdent = lgr._ident;
 					wp = Math.ceil(w/(num - 1));
 					hp = Math.ceil(h/(num - 1));
 					xp = x - Math.floor(wp/2);
@@ -389,7 +499,7 @@ define([], function(){
 		return {
 			draw: draw,
 			cached: cached,
-			drawSky: function(canv, lgr, x, y, w, h, scale){
+			drawSky: function(canv, x, y, w, h, scale){
 				// TODO: check that it's not accessing something it shouldn't
 				var img = lgr.picts[reader.sky()] || lgr.picts.sky;
 				x = Math.floor(x*scale/3);

@@ -31,7 +31,7 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 		reset();
 
 		function reset(){
-			replays = []; levRn = levRender(levRd); levDraw = levRn.cached(2, makeCanvas);
+			replays = []; levRn = levRender(levRd, lgr); levDraw = levRn.cached(6, makeCanvas);
 			lastFrame = 0;
 			refFrame = 0; refTime = Date.now();
 			invalidate = true;
@@ -83,6 +83,7 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 		function setSpeed(n){
 			if(n == 0)
 				return;
+			invalidate = true;
 			setRef();
 			console.log(n);
 			return speed = n;
@@ -91,6 +92,7 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 		function setScale(n){
 			if(n == 0)
 				return;
+			invalidate = true;
 			setRef();
 			console.log(n);
 			return scale = n;
@@ -100,26 +102,28 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 
 		// (w, h), size of canvas
 		function inputClick(x, y, w, h){
-			dragging = false;
-			changeFocus();
+			if(dragging)
+				dragging = false;
+			else
+				changeFocus();
 		}
 
 		function inputDrag(x, y, w, h){
-			dragging = true;
-			var firstSx = startX, firstSy = startY;
+			var firstOx = offsX, firstOy = offsY;
 			// to be called on each update—terminated by .inputClick
 			return function(cx, cy){
-				if(!dragging)
-					return;
-				startX = firstSx - (cx - x)/(48*scale);
-				startY = firstSy - (cy - y)/(48*scale);
+				dragging = true;
+				invalidate = true;
+				offsX = firstOx - (cx - x)/(48*scale);
+				offsY = firstOy - (cy - y)/(48*scale);
 			};
 		}
 
 		function changeFocus(){
+			invalidate = true;
+			offsX = offsY = 0;
 			if(replays.length > 0)
 				replays.unshift(replays.pop());
-			invalidate = true;
 		}
 
 		return {
@@ -172,8 +176,8 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 				var ex = centreX - w/escale/2, ey = centreY - h/escale/2;
 				var ew = w/escale, eh = w/escale;
 
-				levRn.drawSky(canv, lgr, ex, ey, ew, eh, escale);
-				levDraw(canv, lgr, ex, ey, ew, eh, escale);
+				levRn.drawSky(canv, ex, ey, ew, eh, escale);
+				levDraw(canv, ex, ey, ew, eh, escale);
 				if(focus && replays.length > 0)
 					replays[0].objRn.draw(canv, lgr, cap(replays[0].rd.frameCount() - 1), ex, ey, escale);
 				else
