@@ -8,7 +8,7 @@ define(["./levReader", "./recReader", "./get", "./lgr", "./player"], function(le
 		}
 
 		return function(cont){
-			var canvase = mkCanv(1024, 600);
+			var canvase = mkCanv(1024, 768);
 			var canvas = canvase.getContext("2d");
 			elem.appendChild(canvase);
 			get(levName, function(lev){
@@ -49,6 +49,62 @@ define(["./levReader", "./recReader", "./get", "./lgr", "./player"], function(le
 				function draw(){
 					pl.draw(canvas, 0, 0, canvase.width, canvase.height, true);
 				}
+
+				var frame = 0, frameType = 0;
+				function drawFrame(){
+					console.log(frame);
+					if(frameType%2 == 0){
+						pl.drawFrame(canvas, 0, 0, canvase.width, canvase.height, frame);
+					}
+					if(frameType == 0)
+						return;
+					var img = new Image();
+					var n = String(Math.round(frame));
+					while(n.length < 5)
+						n = "0" + n;
+					img.src = "cmptest/snp" + n + ".png";
+					img.onload = function(){
+						if(frameType == 3) // doesn't work
+							canvas.globalAlpha = 0.5;
+						canvas.drawImage(img, 0, 0);
+						canvas.globalAlpha = 1;
+						//pl.drawFrame(canvas, 0, 0, canvase.width, canvase.height, frame);
+					};
+				}
+
+/*
+				window.frame = function(n){
+					frame = n;
+					drawFrame();
+				}
+
+				var a = document.body.appendChild(document.createElement("a"));
+				a.appendChild(document.createTextNode("<<"));
+				a.onclick = function(e){
+					frame--;
+					drawFrame();
+					e.preventDefault();
+				};
+				a.href = "#";
+
+				var a = document.body.appendChild(document.createElement("a"));
+				a.appendChild(document.createTextNode(">>"));
+				a.onclick = function(e){
+					frame++;
+					drawFrame();
+					e.preventDefault();
+				};
+				a.href = "#";
+
+				var a = document.body.appendChild(document.createElement("a"));
+				a.appendChild(document.createTextNode("!!"));
+				a.onclick = function(e){
+					frameType = (frameType + 1)%2;
+					drawFrame();
+					e.preventDefault();
+				};
+				a.href = "#";
+				*/
 
 				loop(draw);
 
