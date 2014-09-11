@@ -32,6 +32,57 @@ define([], function(){
 		canv.stroke();
 	}
 
+	function limb(cwInner, fstParams, sndParams){
+		var fstLen = fstParams.length, sndLen = sndParams.length;
+
+		return function(canv, fstImg, x1, y1, sndImg, x2, y2){
+			var dist = hypot(x2 - x1, y2 - y1);
+
+			var prod =
+				(dist + fstLen + sndLen)*
+				(dist - fstLen + sndLen)*
+				(dist + fstLen - sndLen)*
+				(-dist + fstLen + sndLen);
+			var angle = Math.atan2(y2 - y1, x2 - x1);
+			var jointangle = 0;
+			if(prod >= 0){
+				// law of sines
+				var circumr = dist*fstLen*sndLen/Math.sqrt(prod);
+				jointangle = Math.asin(sndLen/(2*circumr));
+			}else
+				fstLen = fstLen/(fstLen + sndLen)*dist;
+
+			if(cwInner)
+				jointangle *= -1;
+				
+			var jointx = x1 + fstLen*Math.cos(angle + jointangle);
+			var jointy = y1 + fstLen*Math.sin(angle + jointangle);
+
+			//skewimage(canv, fstImg, 0/48, 0.6, 6/48, 39.4/48/3, jointx, jointy, x1, y1);
+			skewimage(canv, fstImg, fstParams.bx, fstParams.by, fstParams.br, fstParams.ih, jointx, jointy, x1, y1);
+			//skewimage(canv, lgr.q1leg, 5/48/3, 0.45, 4/48, 60/48/3, x2, y2, jointx, jointy);
+			skewimage(canv, sndImg, sndParams.bx, sndParams.by, sndParams.br, sndParams.ih, x2, y2, jointx, jointy);
+		};
+
+	}
+
+	var legLimb = limb(false, {
+		length: 26.25/48,
+		bx: 0, by: 0.6, br: 6/48, ih: 39.4/48/3
+	}, {
+		length: 1 - 26.25/48,
+		bx: 5/48/3, by: 0.45, br: 4/48, ih: 60/48/3
+	});
+
+
+	var armLimb = limb(true, {
+		length: 16.25/48,
+		bx: 12.2/48/3, by: 0.5, br: 13/48/3, ih: -32/48/3
+	}, {
+		length: 16.25/48,
+		bx: 3/48, by: 0.5, br: 13.2/48/3, ih: 22.8/48/3
+	});
+
 	return function recRender(reader){
 		var turnFrames = function(){
 			var fc = reader.frameCount();
@@ -155,8 +206,6 @@ define([], function(){
 
 				var wx, wy, a, r;
 				var hbarsX = -21.5, hbarsY = -17;
-				// -10.200000000000045, -65
-				var pedalPX = 4, pedalPY = 23;
 				canv.save();
 					canv.scale(1/48, 1/48);
 
@@ -197,33 +246,8 @@ define([], function(){
 					canv.restore();
 
 					var bumx = 19.5/48, bumy = 0;
-					// -10.200000000000045, -65
 					var pedalx = -wx + 10.2/48/3, pedaly = -wy + 65/48/3;
-					var bum2pedal = hypot(pedalx - bumx, pedaly - bumy);
-					var upper = 26.25/48, lower = 1 - upper; // length of
-
-					var prod =
-						(bum2pedal + upper + lower)*
-						(bum2pedal - upper + lower)*
-						(bum2pedal + upper - lower)*
-						(-bum2pedal + upper + lower);
-					var b2pangle = Math.atan2(pedaly - bumy, pedalx - bumx);
-					var jointangle = 0;
-					if(prod >= 0){
-						// law of sines
-						var circumr = bum2pedal*upper*lower/Math.sqrt(prod);
-						jointangle = Math.asin(lower/(2*circumr));
-					}else
-						upper = upper/(upper + lower)*bum2pedal;
-						
-					var jointx = bumx + upper*Math.cos(b2pangle + jointangle);
-					var jointy = bumy + upper*Math.sin(b2pangle + jointangle);
-
-					// leg—a bit repetitive
-					skewimage(canv, lgr.q1thigh, 0/48, 0.6, 6/48, 39.4/48/3, jointx, jointy, bumx, bumy);
-					//skewimage(canv, lgr.q1leg, 0, 0.5, 3/48, 0.4, pedalx, pedaly, jointx, jointy);
-					skewimage(canv, lgr.q1leg, 5/48/3, 0.45, 4/48, 60/48/3, pedalx, pedaly, jointx, jointy);
-
+					legLimb(canv, lgr.q1thigh, bumx, bumy, lgr.q1leg, pedalx, pedaly);
 /*
 					canv.beginPath();
 					canv.moveTo(bumx, bumy);
@@ -243,12 +267,8 @@ define([], function(){
 					canv.restore();
 
 					var shoulderx = 0/48, shouldery = -17.5/48;
-					// 62.62101910828028, 58.2452229299362?
-					// 38, 63.2—quite a bit different
-					// 64.5, 59.6
 					var handx = -wx - 64.5/48/3, handy = -wy - 59.6/48/3;
 
-					var lower = 16.25/48, upper = 16.25/48;
 					var shoulder2hand = hypot(handx - shoulderx, handy - shouldery);
 
 					var lv = lastVolt(Math.floor(frame));
@@ -265,28 +285,7 @@ define([], function(){
 						handy = shouldery + shoulder2hand*Math.sin(at);
 					}
 
-					var prod =
-						(shoulder2hand + upper + lower)*
-						(shoulder2hand - upper + lower)*
-						(shoulder2hand + upper - lower)*
-						(-shoulder2hand + upper + lower);
-					var jointangle = 0;
-					if(prod >= 0){
-						var circumr = shoulder2hand*upper*lower/Math.sqrt(prod);
-						jointangle = Math.asin(lower/(2*circumr));
-					}else
-						upper = upper/(upper + lower)*shoulder2hand;
-
-					var s2hangle = Math.atan2(handy - shouldery, handx - shoulderx);
-					var jointx = shoulderx + upper*Math.cos(s2hangle - jointangle);
-					var jointy = shouldery + upper*Math.sin(s2hangle - jointangle);
-
-					// arm
-					skewimage(canv, lgr.q1up_arm, 12.2/48/3, 0.5, 13/48/3, -32/48/3, jointx, jointy, shoulderx, shouldery);
-//					skewimage(canv, lgr.q1forarm, 4/48, 0.5, 3/48, 8/48, handx, handy, jointx, jointy);
-					skewimage(canv, lgr.q1forarm, 3/48, 0.5, 13.2/48/3, 22.8/48/3, handx, handy, jointx, jointy);
-//					skewimage(canv, lgr.q1forarm, 35/48/3, 0.5, 3/48, 22.8/48/3, handx, handy, jointx, jointy);
-
+					armLimb(canv, lgr.q1up_arm, shoulderx, shouldery, lgr.q1forarm, handx, handy);
 /*
 					canv.lineWidth = 1/200;
 					canv.strokeStyle = "red";
