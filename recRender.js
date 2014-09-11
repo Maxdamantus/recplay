@@ -58,9 +58,7 @@ define([], function(){
 			var jointx = x1 + fstLen*Math.cos(angle + jointangle);
 			var jointy = y1 + fstLen*Math.sin(angle + jointangle);
 
-			//skewimage(canv, fstImg, 0/48, 0.6, 6/48, 39.4/48/3, jointx, jointy, x1, y1);
 			skewimage(canv, fstImg, fstParams.bx, fstParams.by, fstParams.br, fstParams.ih, jointx, jointy, x1, y1);
-			//skewimage(canv, lgr.q1leg, 5/48/3, 0.45, 4/48, 60/48/3, x2, y2, jointx, jointy);
 			skewimage(canv, sndImg, sndParams.bx, sndParams.by, sndParams.br, sndParams.ih, x2, y2, jointx, jointy);
 		};
 
@@ -165,142 +163,119 @@ define([], function(){
 		// (x, y): top left in Elma coordinates
 		function draw(canv, lgr, frame, x, y, scale){
 			canv.save();
-			canv.translate(/*Math.ceil*/(scale*(-x + bikeXi(frame))), /*Math.ceil*/(scale*(-y - bikeYi(frame))));
-			canv.scale(scale, scale);
-			canv.beginPath();
+				canv.translate(/*Math.ceil*/(scale*(-x + bikeXi(frame))), /*Math.ceil*/(scale*(-y - bikeYi(frame))));
+				canv.scale(scale, scale);
+				canv.beginPath();
 
-			var bikeR = bikeRi(frame)*Math.PI*2/10000;
-			var turn = reader.turn(Math.floor(frame)) >> 1 & 1;
-			var leftX = leftXi(frame)/1000;
-			var leftY = leftYi(frame)/1000;
-			var leftR = leftRi(frame)*Math.PI*2/250;
-			var rightX = rightXi(frame)/1000;
-			var rightY = rightYi(frame)/1000;
-			var rightR = rightRi(frame)*Math.PI*2/250;
-			var headX = headXi(frame)/1000;
-			var headY = headYi(frame)/1000;
-			var lastTurnF = lastTurn(Math.floor(frame));
+				var bikeR = bikeRi(frame)*Math.PI*2/10000;
+				var turn = reader.turn(Math.floor(frame)) >> 1 & 1;
+				var leftX = leftXi(frame)/1000;
+				var leftY = leftYi(frame)/1000;
+				var leftR = leftRi(frame)*Math.PI*2/250;
+				var rightX = rightXi(frame)/1000;
+				var rightY = rightYi(frame)/1000;
+				var rightR = rightRi(frame)*Math.PI*2/250;
+				var headX = headXi(frame)/1000;
+				var headY = headYi(frame)/1000;
+				var lastTurnF = lastTurn(Math.floor(frame));
 
-			canv.save(); // left wheel
-				canv.translate(leftX, -leftY);
-				canv.rotate(-leftR);
-				canv.scale(38.4/48, 38.4/48);
-				canv.translate(-0.5, -0.5);
-				lgr.wheel.draw(canv);
-			canv.restore();
+				canv.save(); // left wheel
+					canv.translate(leftX, -leftY);
+					canv.rotate(-leftR);
+					canv.scale(38.4/48, 38.4/48);
+					canv.translate(-0.5, -0.5);
+					lgr.wheel.draw(canv);
+				canv.restore();
 
-			canv.save(); // right wheel
-				canv.translate(rightX, -rightY);
-				canv.rotate(-rightR);
-				canv.scale(38.4/48, 38.4/48);
-				canv.translate(-0.5, -0.5);
-				lgr.wheel.draw(canv);
-			canv.restore();
+				canv.save(); // right wheel
+					canv.translate(rightX, -rightY);
+					canv.rotate(-rightR);
+					canv.scale(38.4/48, 38.4/48);
+					canv.translate(-0.5, -0.5);
+					lgr.wheel.draw(canv);
+				canv.restore();
 
-			canv.save();
-				canv.rotate(-bikeR);
-				if(turn)
-					canv.scale(-1, 1);
-				if(lastTurnF >= 0 && lastTurnF + 25 > frame) // TODO: it's not linear
-					canv.scale(((frame - lastTurnF)/25 - 0.5)*2, 1);
-
-				var wx, wy, a, r;
-				var hbarsX = -21.5, hbarsY = -17;
 				canv.save();
-					canv.scale(1/48, 1/48);
+					canv.rotate(-bikeR);
+					if(turn)
+						canv.scale(-1, 1);
+					if(lastTurnF >= 0 && lastTurnF + 25 > frame) // TODO: it's not linear
+						canv.scale(((frame - lastTurnF)/25 - 0.5)*2, 1);
 
-					// front suspension
-					wx = turn? rightX : leftX;
-					wy = turn? -rightY : -leftY;
-					a = Math.atan2(wy, (turn? -1 : 1) * wx) + (turn? -1 : 1) * bikeR;
-					r = hypot(wx, wy);
-					skewimage(canv, lgr.susp1, 2, 0.5, 5, 6, 48*r * Math.cos(a), 48*r * Math.sin(a), hbarsX, hbarsY);
+					var wx, wy, a, r;
+					var hbarsX = -21.5, hbarsY = -17;
+					canv.save();
+						canv.scale(1/48, 1/48);
 
-					// rear suspension
-					wx = turn? leftX : rightX;
-					wy = turn? -leftY : -rightY;
-					a = Math.atan2(wy, (turn? -1 : 1) * wx) + (turn? -1 : 1) * bikeR;
-					r = hypot(wx, wy);
-					//skewimage(canv, lgr.susp2, 5, 0.5, 5, 6.5, 48*r*Math.cos(a), 48*r*Math.sin(a), 10, 20);
-					skewimage(canv, lgr.susp2, 0, 0.5, 5, 6, 9, 20, 48*r*Math.cos(a), 48*r*Math.sin(a));
-				canv.restore();
+						// front suspension
+						wx = turn? rightX : leftX;
+						wy = turn? -rightY : -leftY;
+						a = Math.atan2(wy, (turn? -1 : 1) * wx) + (turn? -1 : 1) * bikeR;
+						r = hypot(wx, wy);
+						skewimage(canv, lgr.susp1, 2, 0.5, 5, 6, 48*r * Math.cos(a), 48*r * Math.sin(a), hbarsX, hbarsY);
 
-				canv.save(); // bike
-					canv.translate(-43/48, -12/48);
-					canv.rotate(-Math.PI*0.197);
-					canv.scale(0.215815*380/48, 0.215815*301/48);
-					lgr.bike.draw(canv);
-				canv.restore();
-
-				canv.save(); // kuski
-					r = hypot(headX, headY);
-					a = Math.atan2(-headY, turn? -headX : headX) + (turn? -bikeR : bikeR);
-					wx = r*Math.cos(a);
-					wy = r*Math.sin(a);
-					canv.translate(wx, wy);
-
-					canv.save(); // head
-						canv.translate(-15.5/48, -42/48);
-						canv.scale(23/48, 23/48);
-						lgr.head.draw(canv);
+						// rear suspension
+						wx = turn? leftX : rightX;
+						wy = turn? -leftY : -rightY;
+						a = Math.atan2(wy, (turn? -1 : 1) * wx) + (turn? -1 : 1) * bikeR;
+						r = hypot(wx, wy);
+						//skewimage(canv, lgr.susp2, 5, 0.5, 5, 6.5, 48*r*Math.cos(a), 48*r*Math.sin(a), 10, 20);
+						skewimage(canv, lgr.susp2, 0, 0.5, 5, 6, 9, 20, 48*r*Math.cos(a), 48*r*Math.sin(a));
 					canv.restore();
 
-					var bumx = 19.5/48, bumy = 0;
-					var pedalx = -wx + 10.2/48/3, pedaly = -wy + 65/48/3;
-					legLimb(canv, lgr.q1thigh, bumx, bumy, lgr.q1leg, pedalx, pedaly);
-/*
-					canv.beginPath();
-					canv.moveTo(bumx, bumy);
-					canv.lineTo(jointx, jointy);
-					canv.lineTo(pedalx, pedaly);
-					canv.lineWidth = 1/200;
-					canv.strokeStyle = "red";
-					canv.stroke();
-					*/
-
-
-					canv.save(); // torso
-						canv.translate(17/48, 9.25/48);
-						canv.rotate(Math.PI + 2/3);
-						canv.scale(100/48/3, 58/48/3);
-						lgr.q1body.draw(canv);
+					canv.save(); // bike
+						canv.translate(-43/48, -12/48);
+						canv.rotate(-Math.PI*0.197);
+						canv.scale(0.215815*380/48, 0.215815*301/48);
+						lgr.bike.draw(canv);
 					canv.restore();
 
-					var shoulderx = 0/48, shouldery = -17.5/48;
-					var handx = -wx - 64.5/48/3, handy = -wy - 59.6/48/3;
+					canv.save(); // kuski
+						r = hypot(headX, headY);
+						a = Math.atan2(-headY, turn? -headX : headX) + (turn? -bikeR : bikeR);
+						wx = r*Math.cos(a);
+						wy = r*Math.sin(a);
+						canv.translate(wx, wy);
 
-					var shoulder2hand = hypot(handx - shoulderx, handy - shouldery);
+						canv.save(); // head
+							canv.translate(-15.5/48, -42/48);
+							canv.scale(23/48, 23/48);
+							lgr.head.draw(canv);
+						canv.restore();
 
-					var lv = lastVolt(Math.floor(frame));
-					var animlen = 27;
-					if(lv != null && frame - lv[0] < animlen){
-						// anim: 20/100 s to move hand to new position, 75/100 s to move back
-						var animpos = frame - lv[0];
-						animpos = animpos <= 6? animpos/6 : 1 - (animpos - 6)/(animlen - 6);
-						// elma actually uses the current frame here, which seems weird
-						if(lv[1] != turn)
-							animpos *= -1;
-						var at = Math.atan2(handy - shouldery, handx - shoulderx) + animpos*2*Math.PI/3;
-						handx = shoulderx + shoulder2hand*Math.cos(at);
-						handy = shouldery + shoulder2hand*Math.sin(at);
-					}
+						var bumx = 19.5/48, bumy = 0;
+						var pedalx = -wx + 10.2/48/3, pedaly = -wy + 65/48/3;
+						legLimb(canv, lgr.q1thigh, bumx, bumy, lgr.q1leg, pedalx, pedaly);
 
-					armLimb(canv, lgr.q1up_arm, shoulderx, shouldery, lgr.q1forarm, handx, handy);
-/*
-					canv.lineWidth = 1/200;
-					canv.strokeStyle = "red";
-					target(canv, shoulderx, shouldery, 0.25);
-					target(canv, handx, handy, 0.25);
-					target(canv, bumx, bumy, 0.25);
-					target(canv, pedalx, pedaly, 0.25);
-					canv.beginPath();
-					canv.moveTo(shoulderx, shouldery);
-					canv.lineTo(jointx, jointy);
-					canv.lineTo(handx, handy);
-					canv.stroke();
-					*/
+						canv.save(); // torso
+							canv.translate(17/48, 9.25/48);
+							canv.rotate(Math.PI + 2/3);
+							canv.scale(100/48/3, 58/48/3);
+							lgr.q1body.draw(canv);
+						canv.restore();
+
+						var shoulderx = 0/48, shouldery = -17.5/48;
+						var handx = -wx - 64.5/48/3, handy = -wy - 59.6/48/3;
+
+						var shoulder2hand = hypot(handx - shoulderx, handy - shouldery);
+
+						var lv = lastVolt(Math.floor(frame));
+						var animlen = 27;
+						if(lv != null && frame - lv[0] < animlen){
+							// anim: 20/100 s to move hand to new position, 75/100 s to move back
+							var animpos = frame - lv[0];
+							animpos = animpos <= 6? animpos/6 : 1 - (animpos - 6)/(animlen - 6);
+							// elma actually uses the current frame here, which seems weird
+							if(lv[1] != turn)
+								animpos *= -1;
+							var at = Math.atan2(handy - shouldery, handx - shoulderx) + animpos*2*Math.PI/3;
+							handx = shoulderx + shoulder2hand*Math.cos(at);
+							handy = shouldery + shoulder2hand*Math.sin(at);
+						}
+
+						armLimb(canv, lgr.q1up_arm, shoulderx, shouldery, lgr.q1forarm, handx, handy);
+					canv.restore();
 				canv.restore();
-			canv.restore();
 			canv.restore();
 		}
 
