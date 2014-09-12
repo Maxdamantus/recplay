@@ -259,7 +259,7 @@ define([], function(){
 							canv.translate(17/48, 9.25/48);
 							canv.rotate(Math.PI + 2/3);
 							canv.scale(100/48/3, 58/48/3);
-							lgr.myshirt.draw(canv);
+							lgr.q1body.draw(canv);
 						canv.restore();
 
 						var shoulderx = 0/48, shouldery = -17.5/48;
