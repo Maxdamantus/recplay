@@ -16,11 +16,11 @@ define([], function(){
 		canv.translate(-bx, -by*ih);
 		canv.scale(bx + br + hypot(o, a), ih);
 		img.draw(canv);
-		canv.restore();
-		return;
+		canv.restore(); return;
 		canv.strokeStyle = "green";
 		canv.lineWidth = 1/40;
 		canv.strokeRect(0, 0, 1, 1);
+		canv.restore();
 	}
 
 	function target(canv, x, y, s){
@@ -33,10 +33,9 @@ define([], function(){
 	}
 
 	function limb(cwInner, fstParams, sndParams){
-		var fstLen = fstParams.length, sndLen = sndParams.length;
-
 		return function(canv, fstImg, x1, y1, sndImg, x2, y2){
 			var dist = hypot(x2 - x1, y2 - y1);
+			var fstLen = fstParams.length, sndLen = sndParams.length;
 
 			var prod =
 				(dist + fstLen + sndLen)*
@@ -45,7 +44,7 @@ define([], function(){
 				(-dist + fstLen + sndLen);
 			var angle = Math.atan2(y2 - y1, x2 - x1);
 			var jointangle = 0;
-			if(prod >= 0){
+			if(prod >= 0 && dist < fstLen + sndLen){
 				// law of sines
 				var circumr = dist*fstLen*sndLen/Math.sqrt(prod);
 				jointangle = Math.asin(sndLen/(2*circumr));
@@ -94,19 +93,24 @@ define([], function(){
 			return o;
 		}();
 
-		var volts = function(){
+		var volts = [];
+		void function(){
 			var ec = reader.eventCount();
 			var o = [];
 			for(var e = 0; e < ec; e++)
 				reader.event(e, function(time, info, type, a, b){
-						switch(type){
-							case 6: // right volt
-								o.push([Math.floor(time/.01455976568094950714), true]);
-								break;
-							case 7: // left volt
-								o.push([Math.floor(time/.01455976568094950714), false]);
-								break;
-						}
+					var frame = Math.ceil(time/.01455976568094950714);
+					switch(type){
+						case 5: // turn
+//							turnFrames.push(frame);
+							break;
+						case 6: // right volt
+							volts.push([frame, true]);
+							break;
+						case 7: // left volt
+							volts.push([frame, false]);
+							break;
+					}
 				});
 				return o;
 		}();
@@ -146,6 +150,10 @@ define([], function(){
 			};
 		}
 
+		function turnScale(x){
+			return -Math.cos(x*Math.PI);
+		}
+
 		var bikeXi = interpolate(reader.bikeX);
 		var bikeYi = interpolate(reader.bikeY);
 		var bikeRi = interpolateAng(reader.bikeR, 10000);
@@ -177,7 +185,7 @@ define([], function(){
 				var rightR = rightRi(frame)*Math.PI*2/250;
 				var headX = headXi(frame)/1000;
 				var headY = headYi(frame)/1000;
-				var lastTurnF = lastTurn(Math.floor(frame));
+				var lastTurnF = lastTurn(frame);
 
 				canv.save(); // left wheel
 					canv.translate(leftX, -leftY);
@@ -199,8 +207,8 @@ define([], function(){
 					canv.rotate(-bikeR);
 					if(turn)
 						canv.scale(-1, 1);
-					if(lastTurnF >= 0 && lastTurnF + 25 > frame) // TODO: it's not linear
-						canv.scale(((frame - lastTurnF)/25 - 0.5)*2, 1);
+					if(lastTurnF >= 0 && lastTurnF + 24 > frame)
+						canv.scale(turnScale((frame - lastTurnF)/24), 1);
 
 					var wx, wy, a, r;
 					var hbarsX = -21.5, hbarsY = -17;
@@ -251,7 +259,7 @@ define([], function(){
 							canv.translate(17/48, 9.25/48);
 							canv.rotate(Math.PI + 2/3);
 							canv.scale(100/48/3, 58/48/3);
-							lgr.q1body.draw(canv);
+							lgr.myshirt.draw(canv);
 						canv.restore();
 
 						var shoulderx = 0/48, shouldery = -17.5/48;
@@ -260,17 +268,19 @@ define([], function(){
 						var shoulder2hand = hypot(handx - shoulderx, handy - shouldery);
 
 						var lv = lastVolt(Math.floor(frame));
-						var animlen = 27;
+						var animlen = 28, animprop1 = 0.2;
+						var animx = shoulderx, animy = shouldery; // TODO
 						if(lv != null && frame - lv[0] < animlen){
 							// anim: 20/100 s to move hand to new position, 75/100 s to move back
-							var animpos = frame - lv[0];
-							animpos = animpos <= 6? animpos/6 : 1 - (animpos - 6)/(animlen - 6);
-							// elma actually uses the current frame here, which seems weird
+							var animpos = (frame - lv[0])/animlen;
+							//animpos = animpos <= 6? animpos/6 : 1 - (animpos - 6)/(animlen - 6);
+							animpos = animpos <= animprop1? animpos/animprop1 : 1 - (animpos - animprop1)/(1 - animprop1);
 							if(lv[1] != turn)
 								animpos *= -1;
-							var at = Math.atan2(handy - shouldery, handx - shoulderx) + animpos*2*Math.PI/3;
-							handx = shoulderx + shoulder2hand*Math.cos(at);
-							handy = shouldery + shoulder2hand*Math.sin(at);
+							var at = Math.atan2(handy - animy, handx - animx) + animpos*2*Math.PI/3;
+							var dist = hypot(handy - animy, handx - animx);
+							handx = animx + dist*Math.cos(at);
+							handy = animy + dist*Math.sin(at);
 						}
 
 						armLimb(canv, lgr.q1up_arm, shoulderx, shouldery, lgr.q1forarm, handx, handy);
