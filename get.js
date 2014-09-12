@@ -4,10 +4,10 @@ define([], function(){
 		var xhr = new XMLHttpRequest();
 		xhr.onreadystatechange = function(){
 			if(xhr.readyState == 4)
-				fn(Array.prototype.map.call(new Uint8Array(xhr.response), function(b){ return String.fromCharCode(b); }).join(""));
+				fn(xhr.responseText.split("").map(function(c){ return String.fromCharCode(c.charCodeAt(0) & 0xff); }).join(""));
 		};
 		xhr.open("GET", url);
-		xhr.responseType = "arraybuffer";
+		xhr.overrideMimeType("text/plain; charset=x-user-defined");
 		xhr.send(null);
 	};
 });

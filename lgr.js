@@ -1,6 +1,58 @@
 define([], function(){
-	var imgs = ["bike", "ground", "head", "sky", "susp1", "susp2", "wheel", "qfood1", "qkiller", "qexit", "q1body", "q1forarm", "q1leg", "q1thigh", "q1up_arm", "myshirt"];
-	var picts = "qgrass qdown_1 qdown_14 qdown_5 qdown_9 qup_0 qup_1 qup_14 qup_5 qup_9 qup_18 qdown_18 cliff stone1 stone2 stone3 st3top brick qfood1 qfood2 bridge sky tree2 bush3 tree4 tree5 log2 sedge tree3 plantain bush1 bush2 ground flag secret hang edge mushroom log1 tree1 maskbig maskhor masklitt barrel supphred suppvred support2 support3 support1 suspdown suspup".split(" ");
+	var imgs = ["bike", "ground", "head", "sky", "susp1", "susp2", "wheel", "qfood1", "qfood2", "qkiller", "qexit", "q1body", "q1forarm", "q1leg", "q1thigh", "q1up_arm", "myshirt"];
+	var picts = [
+		["qgrass","text",400,"s"],
+		["qdown_1","pict",400,"s"],
+		["qdown_14","pict",400,"s"],
+		["qdown_5","pict",400,"s"],
+		["qdown_9","pict",400,"s"],
+		["qup_0","pict",400,"s"],
+		["qup_1","pict",400,"s"],
+		["qup_14","pict",400,"s"],
+		["qup_5","pict",400,"s"],
+		["qup_9","pict",400,"s"],
+		["qup_18","pict",400,"s"],
+		["qdown_18","pict",400,"s"],
+		["cliff","pict",400,"s"],
+		["stone1","text",750,"g"],
+		["stone2","text",750,"g"],
+		["stone3","text",750,"s"],
+		["st3top","pict",740,"s"],
+		["brick","text",750,"g"],
+		["qfood1","pict",400,"u"],
+		["qfood2","pict",400,"u"],
+		["bridge","pict",400,"u"],
+		["sky","text",800,"s"],
+		["tree2","pict",540,"s"],
+		["bush3","pict",440,"s"],
+		["tree4","pict",600,"s"],
+		["tree5","pict",600,"s"],
+		["log2","pict",420,"s"],
+		["sedge","pict",430,"s"],
+		["tree3","pict",560,"s"],
+		["plantain","pict",450,"u"],
+		["bush1","pict",550,"s"],
+		["bush2","pict",550,"s"],
+		["ground","text",800,"g"],
+		["flag","pict",450,"s"],
+		["secret","pict",550,"s"],
+		["hang","pict",434,"s"],
+		["edge","pict",440,"u"],
+		["mushroom","pict",430,"s"],
+		["log1","pict",420,"s"],
+		["tree1","pict",550,"s"],
+		["maskbig","mask",,""],
+		["maskhor","mask",,""],
+		["masklitt","mask",,""],
+		["barrel","pict",380,"s"],
+		["supphred","pict",380,"s"],
+		["suppvred","pict",380,"s"],
+		["support2","pict",380,"u"],
+		["support3","pict",380,"u"],
+		["support1","pict",380,"u"],
+		["suspdown","pict",380,"u"],
+		["suspup","pict",380,"u"],
+		["susp","pict",380,"u"]];
 
 	function loading(canv){
 		canv.save();
@@ -56,6 +108,8 @@ define([], function(){
 				name: name,
 
 				touch: requested,
+
+				width: 48, height: 48,
 
 				draw: function(canv){
 					if(requested())
@@ -128,8 +182,9 @@ define([], function(){
 
 		var grassUp = [], grassDown = [], grassUpCount = 0, grassDownCount = 0;
 
-		picts.forEach(function(i){
+		picts.forEach(function(info){
 			var add;
+			var i = info[0];
 			if(i.indexOf("qup_") == 0){
 				grassUpCount++;
 				add = function(g){
@@ -150,14 +205,18 @@ define([], function(){
 					});
 				};
 			}
-			r.picts[i] = lazy(path + "/picts/" + i + ".png", i, add);
+
+			var img = r.picts[i] = lazy(path + "/picts/" + i + ".png", i, add);
+			img.type = info[1];
+			img.dist = info[2];
+			img.clipping = info[3];
 		});
 
 		r.grassUp = function(){
 			if(grassUp.length < grassUpCount)
 				picts.forEach(function(i){
-					if(i.indexOf("qup_") == 0)
-						r.picts[i].touch();
+					if(i[0].indexOf("qup_") == 0)
+						r.picts[i[0]].touch();
 				});
 			return grassUp;
 		};
@@ -165,8 +224,8 @@ define([], function(){
 		r.grassDown = function(){
 			if(grassDown.length < grassDownCount)
 				picts.forEach(function(i){
-					if(i.indexOf("qdown_") == 0)
-						r.picts[i].touch();
+					if(i[0].indexOf("qdown_") == 0)
+						r.picts[i[0]].touch();
 				});
 			return grassDown;
 		};
