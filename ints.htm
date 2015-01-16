@@ -7,6 +7,7 @@
       	require(["./controller"], function(controller){
       		controller("ints/qwquu001.lev", "./images", document.getElementById("recplay"), document)(function(cnt){
       			window.cnt = cnt;
+      			cnt.resize(1024, 768);
       			for(var x = 1; x <= 55; x++)
       				try{ throw x; }catch(x){
       					var a = document.body.appendChild(document.createElement("a"));
