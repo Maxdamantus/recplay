@@ -2,6 +2,14 @@ var require = function(document, global){
 	var cache = {};
 
 	function normPath(p){
+		var prefix;
+		// yuck, meh
+		if(prefix = /^[a-zA-Z]+:\/\//.exec(p)){
+			p = p.substr(prefix[0].length);
+			prefix = prefix[0].toLowerCase();
+		}else{
+			prefix = "";
+		}
 		var parts = p.split("/").filter(function(n, i){
 			return n.length > 0 && (i == 0 || n != ".");
 		});
@@ -10,7 +18,7 @@ var require = function(document, global){
 				parts.splice(x - 1, 2);
 				x -= 2;
 			}
-		return parts.join("/");
+		return prefix + parts.join("/");
 	}
 
 	function makeDefine(file, cont){
@@ -18,7 +26,7 @@ var require = function(document, global){
 		return function define(deps, fn){
 			delete global.define;
 			deps = deps.map(function(d){
-				return normPath(path + "/" + d);
+				return normPath(/^[a-zA-Z]+:\/\//.test(d)? d : path + "/" + d);
 			});
 			var args = [];
 			deps.reduceRight(function(rest, dep){
