@@ -68,15 +68,28 @@ define([], function(){
 		canv.restore();
 	}
 
-	function borders(mkCanv, img){
+	function borders(mkCanv, img, up){
 		var canve = mkCanv(img.width, img.height);
 		var canv = canve.getContext("2d");
 		img.drawAt(canv);
-		var data = canv.getImageData(0, 0, img.width, img.height).data;
+		var data;
+		try{
+			data = canv.getImageData(0, 0, img.width, img.height).data;
+		}catch(e){
+			console.log(e);
+		}
 		var o = [];
-		for(var x = 0; x < img.width; x++){
-			for(var y = 0; y < img.height && data[4*(y*img.width + x) + 3] == 0; y++);
-			o.push(y);
+		if(data)
+			for(var x = 0; x < img.width; x++){
+				for(var y = 0; y < img.height && data[4*(y*img.width + x) + 3] == 0; y++);
+				o.push(y);
+			}
+		else{
+			var diff = img.height - 41;
+			var from = img.height/2 + (up? 1 : -1)*diff/2;
+			var to = img.height/2 + (up? -1 : 1)*diff/2;
+			for(var x = 0; x < img.width; x++)
+				o.push(from + (to - from)*(x/img.width));
 		}
 		return o;
 	}
@@ -188,7 +201,7 @@ define([], function(){
 			if(i.indexOf("qup_") == 0){
 				grassUpCount++;
 				add = function(g){
-					g.borders = borders(mkCanv, g);
+					g.borders = borders(mkCanv, g, true);
 					grassUp.push(g);
 					grassUp.sort(function(a, b){
 						return (a.name > b.name) - (a.name < b.name);
@@ -198,7 +211,7 @@ define([], function(){
 			if(i.indexOf("qdown_") == 0){
 				grassDownCount++;
 				add = function(g){
-					g.borders = borders(mkCanv, g);
+					g.borders = borders(mkCanv, g, false);
 					grassDown.push(g);
 					grassDown.sort(function(a, b){
 						return (a.name > b.name) - (a.name < b.name);
