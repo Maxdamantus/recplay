@@ -1,5 +1,7 @@
 // crude way to get files as binary strings
 define([], function(){
+	"use strict";
+
 	return function(url, fn){
 		var xhr = new XMLHttpRequest();
 		xhr.onreadystatechange = function(){

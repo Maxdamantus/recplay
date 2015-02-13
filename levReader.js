@@ -1,4 +1,6 @@
 define(["./binReader"], function(binReader){
+	"use strict";
+
 	var ticker = function(){
 		var n = 0;
 		return function(m){

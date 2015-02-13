@@ -1,4 +1,6 @@
 var require = function(document, global){
+	"use strict";
+
 	var cache = {};
 
 	function normPath(p){
