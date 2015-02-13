@@ -213,6 +213,8 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 
 			changeFocus: changeFocus,
 
+			setSpeed: setSpeed,
+
 			inputKey: function(key){
 				switch(key){
 					case "space":
@@ -233,6 +235,9 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 						break;
 					case "e":
 						setScale(scale/0.8);
+						break;
+					case "r":
+						setSpeed(-speed);
 						break;
 					case "right":
 						lastFrame += 30*2.5*speed;
