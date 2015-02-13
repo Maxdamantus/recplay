@@ -1,4 +1,6 @@
 define(["./levReader", "./recReader", "./get", "./lgr", "./player"], function(levReader, recReader, get, lgr, player){
+	"use strict";
+
 	return function(levName, imagesPath, elem, document){
 		function mkCanv(w, h){
 			var o = document.createElement("canvas");

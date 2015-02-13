@@ -1,4 +1,6 @@
 define(["./levRender", "./recRender", "./objRender"], function(levRender, recRender, objRender){
+	"use strict";
+
 	function signum(n){
 		return n < 0? -1 : n > 0? 1 : 0;
 	}

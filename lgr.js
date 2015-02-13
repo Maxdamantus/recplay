@@ -1,4 +1,6 @@
 define([], function(){
+	"use strict";
+
 	var imgs = ["bike", "ground", "head", "sky", "susp1", "susp2", "wheel", "qfood1", "qfood2", "qkiller", "qexit", "q1body", "q1forarm", "q1leg", "q1thigh", "q1up_arm", "myshirt"];
 	var picts = [
 		["qgrass","text",400,"s"],

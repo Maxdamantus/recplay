@@ -1,4 +1,6 @@
 define([], function(){
+	"use strict";
+
 	return function objRender(levReader, recReader){
 		var appleCount = 0;
 

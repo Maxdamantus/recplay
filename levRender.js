@@ -1,4 +1,6 @@
 define([], function(){
+	"use strict";
+
 	function hypot(a, b){
 		return Math.sqrt(a*a + b*b);
 	}
