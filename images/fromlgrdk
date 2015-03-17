@@ -9,6 +9,8 @@ n=0
 
 # NOTE: lgrdk doesn't include masklitt.tga for some reason, only .pcx
 
+convert "$1"/MASKLITT.PCX masklitt.png
+
 cat "$1"/PICTURES.LST | sed 's/\r$//; $s/$/\n/' | while read picline; do
 	picline="$(sed 's/ \+/ /g' <<< "$picline")"
 	name="$(cut -d\  -f 1 <<< "$picline" | tr a-z A-Z)"
