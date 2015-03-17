@@ -1,0 +1,18 @@
+<html>
+  <head>
+    <script src="../amd.js"></script>
+    <script>
+      window.onload = function(){
+      	require(["../controller"], function(controller){
+      		controller("chainpi3.lev", "../images", document.getElementById("recplay"), document)(function(cnt){
+      			cnt.resize(1024, 768);
+      			cnt.loadReplay("chainpi3adi.rec");
+      		});
+      	});
+      };
+    </script>
+  </head>
+  <body>
+    <div id="recplay"></div>
+  </body>
+</html>
