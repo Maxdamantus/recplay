@@ -16,7 +16,7 @@ var require = function(document, global){
 			return n.length > 0 && (i == 0 || n != ".");
 		});
 		for(var x = 0; x < parts.length; x++)
-			if(parts[x] == ".." && x > 0 && parts[x - 1] != ".."){
+			if(x > 0 && parts[x] == ".." && ["..", "."].indexOf(parts[x - 1]) < 0){
 				parts.splice(x - 1, 2);
 				x -= 2;
 			}
