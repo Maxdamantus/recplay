@@ -64,16 +64,16 @@ define(["./levReader", "./recReader", "./get", "./lgr", "./player"], function(le
 
 				canvase.addEventListener("click", function(e){
 					var r = rect();
-					pl.inputClick(e.clientX - r.left, e.clientY - r.top, canvase.width, canvase.height); // TODO
+					pl.inputClick(e.clientX - r.left, e.clientY - r.top, canvase.width, canvase.height);
 					e.preventDefault();
 				});
 
 				canvase.addEventListener("mousedown", function(e){
 					var r = rect();
-					var cont = pl.inputDrag(e.clientX - r.left, e.clientY - r.top, canvase.width, canvase.height); // TODO
+					var cont = pl.inputDrag(e.clientX - r.left, e.clientY - r.top, canvase.width, canvase.height);
 
 					function onmousemove(e){
-						cont.update(e.clientX - r.left, e.clientY - r.top); // TODO
+						cont.update(e.clientX - r.left, e.clientY - r.top);
 						e.preventDefault();
 					}
 
