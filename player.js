@@ -129,7 +129,7 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 		function dragSeek(x, y, w, h){
 			var firstPlaying = playing;
 			playing = false;
-			
+
 			function update(cx, cy){
 				dragging = true;
 				if(replays.length == 0)
