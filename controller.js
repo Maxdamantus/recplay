@@ -58,19 +58,26 @@ define(["./levReader", "./recReader", "./get", "./lgr", "./player"], function(le
 
 				loop(draw);
 
+				function rect(){
+					return canvase.getBoundingClientRect();
+				}
+
 				canvase.onclick = function(e){
-					pl.inputClick(e.clientX, e.clientY, canvase.width, canvase.height); // TODO
+					var r = rect();
+					pl.inputClick(e.clientX - r.left, e.clientY - r.top, canvase.width, canvase.height); // TODO
 					e.preventDefault();
 				};
 
 				canvase.onmousedown = function(e){
-					var cont = pl.inputDrag(e.clientX, e.clientY, canvase.width, canvase.height); // TODO
+					var r = rect();
+					var cont = pl.inputDrag(e.clientX - r.left, e.clientY - r.top, canvase.width, canvase.height); // TODO
 
 					canvase.onmousemove = function(e){
-						cont(e.clientX, e.clientY); // TODO
+						cont.update(e.clientX - r.left, e.clientY - r.top); // TODO
 					};
 
 					canvase.onmouseup = function(){
+						cont.end();
 						canvase.onmousemove = undefined;
 						canvase.onmouseup = undefined;
 					};
