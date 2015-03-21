@@ -2,8 +2,15 @@ define(["./levReader", "./recReader", "./get", "./lgr", "./player"], function(le
 	"use strict";
 
 	return function(levName, imagesPath, elem, document){
+		var createElement = "createElementNS" in document?
+			function(tag){
+				return document.createElementNS("http://www.w3.org/1999/xhtml", tag);
+			} : function(tag){
+				return document.createElement(tag);
+			};
+
 		function mkCanv(w, h){
-			var o = document.createElement("canvas");
+			var o = document.createElementNS("http://www.w3.org/1999/xhtml", "canvas");
 			o.width = w;
 			o.height = h;
 			return o;
@@ -15,7 +22,7 @@ define(["./levReader", "./recReader", "./get", "./lgr", "./player"], function(le
 			elem.appendChild(canvase);
 			get(levName, function(lev){
 				var pl = player(levReader(lev), window.lgr = lgr(imagesPath, function(){
-					return document.createElement("img");
+					return createElement("img");
 				}, mkCanv), mkCanv);
 				window.pl = pl; // just so it's accessible in the console
 
@@ -32,12 +39,9 @@ define(["./levReader", "./recReader", "./get", "./lgr", "./player"], function(le
 					}
 				};
 
-				document.addEventListener("keydown", listener, true);
+				canvase.setAttribute("tabindex", "0");
+				canvase.addEventListener("keydown", listener, true);
 			
-				elem.insertBefore(document.createElement("br"), canvase);
-
-				console.log(window.requestAnimationFrame);
-
 				var loop = typeof requestAnimationFrame != "undefined"? function(fn){
 					void function go(){
 						fn();
