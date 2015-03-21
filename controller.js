@@ -62,26 +62,30 @@ define(["./levReader", "./recReader", "./get", "./lgr", "./player"], function(le
 					return canvase.getBoundingClientRect();
 				}
 
-				canvase.onclick = function(e){
+				canvase.addEventListener("click", function(e){
 					var r = rect();
 					pl.inputClick(e.clientX - r.left, e.clientY - r.top, canvase.width, canvase.height); // TODO
 					e.preventDefault();
-				};
+				});
 
-				canvase.onmousedown = function(e){
+				canvase.addEventListener("mousedown", function(e){
 					var r = rect();
 					var cont = pl.inputDrag(e.clientX - r.left, e.clientY - r.top, canvase.width, canvase.height); // TODO
 
-					canvase.onmousemove = function(e){
+					function onmousemove(e){
 						cont.update(e.clientX - r.left, e.clientY - r.top); // TODO
-					};
+					}
 
-					canvase.onmouseup = function(){
+					function onmouseup(){
 						cont.end();
-						canvase.onmousemove = undefined;
-						canvase.onmouseup = undefined;
-					};
-				};
+						// /me dislikes function identity
+						document.removeEventListener("mousemove", onmousemove);
+						document.removeEventListener("mouseup", onmouseup);
+					}
+
+					document.addEventListener("mousemove", onmousemove);
+					document.addEventListener("mouseup", onmouseup);
+				});
 
 				cont({
 					loadReplay: function(recName){
