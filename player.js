@@ -64,6 +64,7 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 		function setRef(){
 			refFrame = lastFrame;
 			refTime = Date.now();
+			invalidate = true;
 		}
 
 		function calcFrameCount(){
@@ -81,7 +82,6 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 		function setSpeed(n){
 			if(n == 0)
 				return;
-			invalidate = true;
 			setRef();
 			console.log(n);
 			return speed = n;
@@ -90,7 +90,6 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 		function setScale(n){
 			if(n == 0)
 				return;
-			invalidate = true;
 			setRef();
 			console.log(n);
 			return scale = n;
@@ -107,13 +106,47 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 		}
 
 		function inputDrag(x, y, w, h){
+			if(y < 12 && replays.length > 0)
+				return dragSeek(x, y, w, h);
+			return dragPosition(x, y, w, h);
+		}
+
+		function dragPosition(x, y, w, h){
 			var firstOx = offsX, firstOy = offsY;
-			// to be called on each update—terminated by .inputClick
-			return function(cx, cy){
+
+			return {
+				update: function(cx, cy){
+					dragging = true;
+					invalidate = true;
+					offsX = firstOx - (cx - x)/(48*scale);
+					offsY = firstOy - (cy - y)/(48*scale);
+				},
+
+				end: function(){}
+			};
+		}
+
+		function dragSeek(x, y, w, h){
+			var firstPlaying = playing;
+			playing = false;
+
+			function update(cx, cy){
 				dragging = true;
-				invalidate = true;
-				offsX = firstOx - (cx - x)/(48*scale);
-				offsY = firstOy - (cy - y)/(48*scale);
+				if(replays.length == 0)
+					return;
+				lastFrame = replays[0].rd.frameCount()*cx/w;
+				setRef();
+			}
+
+			update(x, y);
+
+			return {
+				update: update,
+
+				end: function(){
+					playing = firstPlaying;
+					setRef();
+				}
 			};
 		}
 

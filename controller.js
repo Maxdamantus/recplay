@@ -58,23 +58,34 @@ define(["./levReader", "./recReader", "./get", "./lgr", "./player"], function(le
 
 				loop(draw);
 
-				canvase.onclick = function(e){
-					pl.inputClick(e.clientX, e.clientY, canvase.width, canvase.height); // TODO
+				function rect(){
+					return canvase.getBoundingClientRect();
+				}
+
+				canvase.addEventListener("click", function(e){
+					var r = rect();
+					pl.inputClick(e.clientX - r.left, e.clientY - r.top, canvase.width, canvase.height); // TODO
 					e.preventDefault();
-				};
+				});
 
-				canvase.onmousedown = function(e){
-					var cont = pl.inputDrag(e.clientX, e.clientY, canvase.width, canvase.height); // TODO
+				canvase.addEventListener("mousedown", function(e){
+					var r = rect();
+					var cont = pl.inputDrag(e.clientX - r.left, e.clientY - r.top, canvase.width, canvase.height); // TODO
 
-					canvase.onmousemove = function(e){
-						cont(e.clientX, e.clientY); // TODO
-					};
+					function onmousemove(e){
+						cont.update(e.clientX - r.left, e.clientY - r.top); // TODO
+					}
 
-					canvase.onmouseup = function(){
-						canvase.onmousemove = undefined;
-						canvase.onmouseup = undefined;
-					};
-				};
+					function onmouseup(){
+						cont.end();
+						// /me dislikes function identity
+						document.removeEventListener("mousemove", onmousemove);
+						document.removeEventListener("mouseup", onmouseup);
+					}
+
+					document.addEventListener("mousemove", onmousemove);
+					document.addEventListener("mouseup", onmouseup);
+				});
 
 				cont({
 					loadReplay: function(recName){
