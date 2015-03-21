@@ -74,6 +74,7 @@ define(["./levReader", "./recReader", "./get", "./lgr", "./player"], function(le
 
 					function onmousemove(e){
 						cont.update(e.clientX - r.left, e.clientY - r.top); // TODO
+						e.preventDefault();
 					}
 
 					function onmouseup(){
@@ -81,6 +82,7 @@ define(["./levReader", "./recReader", "./get", "./lgr", "./player"], function(le
 						// /me dislikes function identity
 						document.removeEventListener("mousemove", onmousemove);
 						document.removeEventListener("mouseup", onmouseup);
+						e.preventDefault();
 					}
 
 					document.addEventListener("mousemove", onmousemove);
