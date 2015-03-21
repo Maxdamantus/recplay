@@ -107,6 +107,10 @@ define(["./levReader", "./recReader", "./get", "./lgr", "./player"], function(le
 					resize: function(wd, ht){
 						canvase.width = wd;
 						canvase.height = ht;
+					},
+
+					player: function(){
+						return pl;
 					}
 				});
 			});
