@@ -157,6 +157,11 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 				replays.unshift(replays.pop());
 		}
 
+		function playPause(){
+			playing = !playing;
+			setRef();
+		}
+
 		function drawFrame(canv, x, y, w, h, frame){
 			x = Math.floor(x); y = Math.floor(y);
 			w = Math.floor(w); h = Math.floor(h);
@@ -247,12 +252,17 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 			changeFocus: changeFocus,
 
 			setSpeed: setSpeed,
+			setScale: setScale,
+			speed: function(){ return speed; },
+			scale: function(){ return scale; },
+
+			playPause: playPause,
+			playing: function(){ return playing; },
 
 			inputKey: function(key){
 				switch(key){
 					case "space":
-						playing = !playing;
-						setRef();
+						playPause();
 						break;
 					case "[":
 						setSpeed(speed*0.8); // 0.8^n is actually representable
