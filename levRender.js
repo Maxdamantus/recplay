@@ -1,4 +1,4 @@
-define([], function(){
+define(["quadTree"], function(quadTree){
 	"use strict";
 
 	function hypot(a, b){
@@ -97,95 +97,16 @@ define([], function(){
 		}();
 
 		var grass = function(){
-			var root; // quad tree: T = null | { descs : [grassDesc] } | ([tl, tr, bl, br] : [T])
-			var rootW = 1; // length of top-level squares, all touching (0,0)
-			var minW = 1;
+			var tree;
 			var maxImgW, maxImgH; // for overbounding in .traverse
-
-			function dbgdraw(canv){
-				function draw_(tree){
-					canv.strokeRect(0, 0, 1, 1);
-					if(tree instanceof Array){
-						for(var y = 0; y < 2; y++)
-							for(var x = 0; x < 2; x++){
-								canv.save();
-									canv.scale(1/2, 1/2);
-									canv.translate(x, y);
-									draw_(tree[y*2 + x]);
-								canv.restore();
-							}
-
-					}
-				}
-
-				canv.save();
-					canv.translate(-rootW, -rootW);
-					canv.scale(2*rootW, 2*rootW);
-					canv.strokeStyle = "orange";
-					canv.lineWidth = 1/100;
-					draw_(root);
-				canv.restore();
-			}
-
-			function traverse_(tree, tx, ty, tw, x, y, w, h, fn){
-				if(tree === null)
-					return;
-				if("descs" in tree){ // leaf
-					tree.descs.forEach(fn);
-					return;
-				}
-				var n = 0;
-				for(var sy = 0; sy < 2; sy++)
-					for(var sx = 0; sx < 2; sx++){
-						var dx = sx == 0? -1 : 1;
-						var dy = sy == 0? -1 : 1;
-						if(rectsOverlap(x, y, w, h, tx - tw + sx*tw, ty - tw + sy*tw, tw, tw))
-							traverse_(tree[n], tx + dx*tw/2, ty + dy*tw/2, tw/2, x, y, w, h, fn);
-						n++;
-					}
-			}
 
 			// assuming w and h are positive
 			function traverse(x, y, w, h, fn){
-				return traverse_(root, 0, 0, rootW, x - maxImgW, y - maxImgH, w + maxImgW, h + maxImgH, fn);
-			}
-
-			function add_(desc, tree, x, y, w){
-				if(tree === null)
-					return { descs: [desc] };
-				var dx = desc.x < x? -1 : 1;
-				var dy = desc.y < y? -1 : 1;
-				var quad = 2*(dy < 0? 0 : 1) + (dx < 0? 0 : 1);
-				// could alternatively make it pure here
-				if(tree instanceof Array){
-					tree[quad] = add_(desc, tree[quad], x + dx*w/2, y + dy*w/2, w/2);
-					return tree;
-				}
-				if(w < minW){
-					tree.descs.push(desc);
-					return tree;
-				}
-				var r = [null, null, null, null];
-				r[quad] = { descs: [desc] };
-				for(var z = 0; z < tree.descs.length; z++)
-					r = add_(tree.descs[z], r, x, y, w);
-				return r;
-			}
-
-			function add(desc){
-				while(Math.abs(desc.x) >= rootW || Math.abs(desc.y) >= rootW){
-					root[0] = [null, null, null, root[0]];
-					root[1] = [null, null, root[1], null];
-					root[2] = [null, root[2], null, null];
-					root[3] = [root[3], null, null, null];
-					rootW *= 2;
-				}
-				if(add_(desc, root, 0, 0, rootW) != root)
-					throw new Error("internal error");
+				tree.traverse(x - maxImgW, y - maxImgH, w + maxImgW, h + maxImgH, fn);
 			}
 
 			function calc(){
-				root = [null, null, null, null];
+				tree = quadTree();
 				maxImgW = maxImgH = 0;
 
 				grassPolys.forEach(function(p){
@@ -258,7 +179,7 @@ define([], function(){
 						maxImgW = Math.max(maxImgW, pict.width/scale);
 						maxImgH = Math.max(maxImgH, pict.height/scale);
 
-						add({ x: fcx/scale, y: fcyTop/scale, pict: pict });
+						tree.add(fcx/scale, fcyTop/scale, pict);
 
 						curX += pict.width;
 						curY += fall;
@@ -269,7 +190,9 @@ define([], function(){
 			return {
 				calc: calc,
 				traverse: traverse,
-				dbgdraw: dbgdraw
+				dbgdraw: function(canv, x, y, w, h){
+					tree.dbgdraw(canv, x, y, w, h);
+				}
 			};
 		}();
 
@@ -368,17 +291,17 @@ define([], function(){
 
 			canv.save();
 				canv.beginPath();
-				grass.traverse(x, y, w, h, function(grassDesc){
+				grass.traverse(x, y, w, h, function(grassX, grassY, pict){
 					canv.save();
-						canv.translate(grassDesc.x*scale, grassDesc.y*scale);
-						var b = grassDesc.pict.borders;
+						canv.translate(grassX*scale, grassY*scale);
+						var b = pict.borders;
 						canv.scale(scale/48, scale/48);
 						canv.moveTo(0, -24);
 						for(var z = 0; z < b.length; z++){
 							canv.lineTo(z, b[z] + 1);
 							canv.lineTo(z + 1, b[z] + 1);
 						}
-						canv.lineTo(grassDesc.pict.width, -24);
+						canv.lineTo(pict.width, -24);
 						canv.closePath();
 					canv.restore();
 				});
@@ -400,11 +323,11 @@ define([], function(){
 			canv.restore();
 
 
-			grass.traverse(x, y, w, h, function(grassDesc){
+			grass.traverse(x, y, w, h, function(grassX, grassY, pict){
 				canv.save();
-					canv.translate(grassDesc.x*scale, grassDesc.y*scale);
+					canv.translate(grassX*scale, grassY*scale);
 					canv.scale(scale/48, scale/48);
-					grassDesc.pict.drawAt(canv);
+					pict.drawAt(canv);
 				canv.restore();
 			});
 
@@ -427,7 +350,9 @@ define([], function(){
 					canv.save();
 						canv.translate(-x*scale, -y*scale);
 						canv.scale(scale, scale);
-						grass.dbgdraw(canv);
+						canv.strokeStyle = "orange";
+						canv.lineWidth = 1/48;
+						grass.dbgdraw(canv, x, y, w, h);
 					canv.restore();
 				}
 			}
