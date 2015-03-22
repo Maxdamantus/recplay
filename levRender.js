@@ -97,13 +97,17 @@ define(["quadTree"], function(quadTree){
 				var count = reader.picCount();
 				for(var x = 0; x < count; x++){
 					var pic = reader.pic_(x);
+					pic.num = x;
 					// TODO: defaults?
 					tree.add(pic.x, pic.y, pic);
-					var img = lgr.picts[pic.picture] || lgr.picts[pic.mask];
-					if(img && img.width !== undefined && img.height !== undefined){
-						maxImgW = Math.max(maxImgW, img.width);
-						maxImgH = Math.max(maxImgH, img.height);
-					}
+					[pic.picture, pic.mask, pic.texture].forEach(function(picname){
+						var img = lgr.picts[picname];
+						if(img && img.width !== undefined && img.height !== undefined){
+							img.touch();
+							maxImgW = Math.max(maxImgW, img.width);
+							maxImgH = Math.max(maxImgH, img.height);
+						}
+					});
 				}
 			}
 
@@ -216,7 +220,7 @@ define(["quadTree"], function(quadTree){
 			};
 		}();
 
-		function drawPictures(canv, scale, clipping, x, y, w, h){
+		function drawPictures(pics, canv, scale, clipping, x, y, w, h){
 			function draw(pic){
 				// TODO: are masks specifically for textures? dunno
 				var img = lgr.picts[pic.picture];
@@ -256,13 +260,6 @@ define(["quadTree"], function(quadTree){
 				}
 			}
 
-			var pics = [];
-			pictures.traverse(x, y, w, h, function(x, y, pic){
-				pics.push(pic);
-			});
-			pics.sort(function(a, b){
-				return (a.dist > b.dist) - (a.dist < b.dist);
-			});
 			pics.forEach(draw);
 		}
 
@@ -276,9 +273,17 @@ define(["quadTree"], function(quadTree){
 				lgrIdent = lgr._ident;
 			}
 
+			var pics = [];
+			pictures.traverse(x, y, w, h, function(x, y, pic){
+				pics.push(pic);
+			});
+			pics.sort(function(a, b){
+				return (a.dist < b.dist) - (a.dist > b.dist) || (a.num < b.num) - (a.num > b.num);;
+			});
+
 			canv.save();
 				canv.translate(-x*scale, -y*scale);
-				drawPictures(canv, scale, "s", x, y, w, h); // sky
+				drawPictures(pics, canv, scale, "s", x, y, w, h); // sky
 			canv.restore();
 
 			canv.save();
@@ -315,7 +320,7 @@ define(["quadTree"], function(quadTree){
 //			canv.restore();
 			canv.save();
 				canv.translate(-x*scale, -y*scale);
-				drawPictures(canv, scale, "g", x, y, w, h); // ground
+				drawPictures(pics, canv, scale, "g", x, y, w, h); // ground
 			canv.restore();
 
 			canv.translate(-x*scale, -y*scale);
@@ -371,7 +376,7 @@ define(["quadTree"], function(quadTree){
 
 			canv.save();
 				canv.translate(-x*scale, -y*scale);
-				drawPictures(canv, scale, "u", x, y, w, h); // unclipped
+				drawPictures(pics, canv, scale, "u", x, y, w, h); // unclipped
 			canv.restore();
 
 			canv.strokeStyle = "#ff0000";
