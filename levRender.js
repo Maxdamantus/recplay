@@ -83,17 +83,37 @@ define(["quadTree"], function(quadTree){
 		});
 
 		var pictures = function(){
-			var o = [];
-			var count = reader.picCount();
-			for(var x = 0; x < count; x++){
-				var pic = reader.pic_(x);
-				// TODO: defaults
-				for(var n = 0; n < o.length && o[n][0].dist > pic.dist; n++);
-				if(n >= o.length || o[n][0].dist != pic.dist)
-					o.splice(n, 0, []);
-				o[n].push(pic);
+			var tree;
+			var maxImgW, maxImgH; // for overbounding in .traverse
+
+			function traverse(x, y, w, h, fn){
+				tree.traverse(x - maxImgW, y - maxImgH, w + maxImgW, h + maxImgH, fn);
 			}
-			return o;
+
+			function calc(){
+				tree = quadTree(1);
+				maxImgW = maxImgH = 0;
+
+				var count = reader.picCount();
+				for(var x = 0; x < count; x++){
+					var pic = reader.pic_(x);
+					// TODO: defaults?
+					tree.add(pic.x, pic.y, pic);
+					var img = lgr.picts[pic.picture] || lgr.picts[pic.mask];
+					if(img && img.width !== undefined && img.height !== undefined){
+						maxImgW = Math.max(maxImgW, img.width);
+						maxImgH = Math.max(maxImgH, img.height);
+					}
+				}
+			}
+
+			return {
+				calc: calc,
+				traverse: traverse,
+				dbgdraw: function(canv, x, y, w, h){
+					tree.dbgdraw(canv, x, y, w, h);
+				}
+			};
 		}();
 
 		var grass = function(){
@@ -106,7 +126,7 @@ define(["quadTree"], function(quadTree){
 			}
 
 			function calc(){
-				tree = quadTree();
+				tree = quadTree(1);
 				maxImgW = maxImgH = 0;
 
 				grassPolys.forEach(function(p){
@@ -196,22 +216,27 @@ define(["quadTree"], function(quadTree){
 			};
 		}();
 
-		function drawPictures(canv, scale, clipping){
+		function drawPictures(canv, scale, clipping, x, y, w, h){
 			function draw(pic){
 				// TODO: are masks specifically for textures? dunno
 				var img = lgr.picts[pic.picture];
 				if(pic.clipping != clipping)
 					return;
 				if(img && img.draw){
+					if(!rectsOverlap(pic.x, pic.y, img.width, img.height, x, y, w, h))
+						return;
 					canv.save();
 						canv.translate(pic.x*scale, pic.y*scale);
 						canv.scale(scale/48, scale/48);
 						img.drawAt(canv);
 					canv.restore();
+					return;
 				}
 				img = lgr.picts[pic.texture];
 				var mask = lgr.picts[pic.mask];
 				if(img && img.draw && mask && mask.draw){
+					if(!rectsOverlap(pic.x, pic.y, mask.width, mask.height, x, y, w, h))
+						return;
 					// TODO: scale textures, fix otherwise
 					var px = Math.round(pic.x*scale), py = Math.round(pic.y*scale);
 					var offsX = px >= 0? px%img.width : img.width - -px%img.width;
@@ -231,9 +256,14 @@ define(["quadTree"], function(quadTree){
 				}
 			}
 
-			pictures.forEach(function(layer){
-				layer.forEach(draw);
+			var pics = [];
+			pictures.traverse(x, y, w, h, function(x, y, pic){
+				pics.push(pic);
 			});
+			pics.sort(function(a, b){
+				return (a.dist > b.dist) - (a.dist < b.dist);
+			});
+			pics.forEach(draw);
 		}
 
 		var lgrIdent = {};
@@ -242,12 +272,13 @@ define(["quadTree"], function(quadTree){
 		function draw(canv, x, y, w, h, scale){
 			if(lgrIdent != lgr._ident){
 				grass.calc();
+				pictures.calc();
 				lgrIdent = lgr._ident;
 			}
 
 			canv.save();
 				canv.translate(-x*scale, -y*scale);
-				drawPictures(canv, scale, "s"); // sky
+				drawPictures(canv, scale, "s", x, y, w, h); // sky
 			canv.restore();
 
 			canv.save();
@@ -284,7 +315,7 @@ define(["quadTree"], function(quadTree){
 //			canv.restore();
 			canv.save();
 				canv.translate(-x*scale, -y*scale);
-				drawPictures(canv, scale, "g"); // ground
+				drawPictures(canv, scale, "g", x, y, w, h); // ground
 			canv.restore();
 
 			canv.translate(-x*scale, -y*scale);
@@ -340,7 +371,7 @@ define(["quadTree"], function(quadTree){
 
 			canv.save();
 				canv.translate(-x*scale, -y*scale);
-				drawPictures(canv, scale, "u"); // unclipped
+				drawPictures(canv, scale, "u", x, y, w, h); // unclipped
 			canv.restore();
 
 			canv.strokeStyle = "#ff0000";
@@ -350,9 +381,13 @@ define(["quadTree"], function(quadTree){
 					canv.save();
 						canv.translate(-x*scale, -y*scale);
 						canv.scale(scale, scale);
-						canv.strokeStyle = "orange";
 						canv.lineWidth = 1/48;
-						grass.dbgdraw(canv, x, y, w, h);
+						canv.strokeStyle = "orange";
+						if(window.dbg & 2)
+							grass.dbgdraw(canv, x, y, w, h);
+						canv.strokeStyle = "purple";
+						if(window.dbg & 4)
+							pictures.dbgdraw(canv, x, y, w, h);
 					canv.restore();
 				}
 			}
