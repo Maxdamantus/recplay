@@ -41,7 +41,7 @@ define([], function(){
 				recReader.event(x, function(time, info, type){
 					if(type == 0) // TODO: check it's actually there?
 						if(objs.length > info && objs[info].type == "ap" && !("taken" in objs[info])) // TODO: maybe track gravity here?
-							applesTaken.push([objs[info].taken = Math.floor(time/.01455976568094950714), applesTaken.length + 1]);
+							applesTaken.push([objs[info].taken = Math.floor(time/.01456), applesTaken.length + 1]);
 				});
 		}();
 
