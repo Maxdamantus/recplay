@@ -168,8 +168,6 @@ define([], function(){
 		var headXi = interpolate(reader.headX);
 		var headYi = interpolate(reader.headY);
 
-		console.log(turnFrames);
-		console.log(volts);
 		// (x, y): top left in Elma coordinates
 		function draw(canv, lgr, frame, x, y, scale){
 			canv.save();
