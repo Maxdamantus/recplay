@@ -101,7 +101,7 @@ define([], function(){
 			var o = [];
 			for(var e = 0; e < ec; e++)
 				reader.event(e, function(time, info, type, a, b){
-					var frame = Math.ceil(time/.01455976568094950714);
+					var frame = Math.ceil(time/.01456);
 					switch(type){
 						case 5: // turn
 //							turnFrames.push(frame);
