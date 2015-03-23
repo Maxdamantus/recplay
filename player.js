@@ -162,6 +162,14 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 			setRef();
 		}
 
+		function arrow(str){
+			if(str == "up") return "\u2191";
+			if(str == "down") return "\u2193";
+			if(str == "left") return "\u2190";
+			if(str == "right") return "\u2192";
+			return "";
+		}
+
 		function drawFrame(canv, x, y, w, h, frame){
 			x = Math.floor(x); y = Math.floor(y);
 			w = Math.floor(w); h = Math.floor(h);
@@ -204,8 +212,9 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 				canv.fillStyle = "yellow";
 				var csec = pad(2, t%100); t = Math.floor(t/100);
 				var sec = pad(2, t%60); t = Math.floor(t/60);
-				canv.fillText(t + ":" + sec + "." + csec, 10, 24);
-				canv.fillText(replays[0].objRn.applesTaken(frame) + "/" + replays[0].objRn.appleCount(), 10, 38);
+				canv.fillText(t + ":" + sec + "." + csec, 10, 12*2);
+				canv.fillText(replays[0].objRn.applesTaken(frame) + "/" + replays[0].objRn.appleCount(), 10, 12*3);
+				canv.fillText(arrow(replays[0].objRn.gravity(frame)), 10, 12*4);
 				canv.fillRect(w*frame/replays[0].rd.frameCount() - 2.5, 0, 5, 12);
 			}
 			invalidate = false;
@@ -242,8 +251,10 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 			},
 
 			addReplay: function(recRd){
-				if(replays.length == 0)
+				if(replays.length == 0){
+					lastFrame = 0;
 					setRef();
+				}
 				replays.push({ rd: recRd, rn: recRender(recRd), objRn: objRender(levRd, recRd) });
 				frameCount = calcFrameCount();
 				invalidate = true;

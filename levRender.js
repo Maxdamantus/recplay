@@ -1,4 +1,4 @@
-define(["quadTree"], function(quadTree){
+define(["./util/quadTree"], function(quadTree){
 	"use strict";
 
 	function hypot(a, b){

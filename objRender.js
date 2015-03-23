@@ -33,6 +33,7 @@ define([], function(){
 		}();
 
 		var applesTaken = [];
+		var gravityChanges = [];
 		void function(){
 			if(!recReader)
 				return;
@@ -40,8 +41,13 @@ define([], function(){
 			for(var x = 0; x < count; x++)
 				recReader.event(x, function(time, info, type){
 					if(type == 0) // TODO: check it's actually there?
-						if(objs.length > info && objs[info].type == "ap" && !("taken" in objs[info])) // TODO: maybe track gravity here?
-							applesTaken.push([objs[info].taken = Math.floor(time/.01456), applesTaken.length + 1]);
+						if(objs.length > info && objs[info].type == "ap" && !("taken" in objs[info])){ // TODO: maybe track gravity here?
+							var frame = time/.01456;
+							objs[info].taken = frame;
+							applesTaken.push([frame, applesTaken.length + 1]);
+							if(objs[info].grav > 0)
+								gravityChanges.push([frame, ["up", "down", "left", "right"][objs[info].grav - 1]]);
+						}
 				});
 		}();
 
@@ -55,6 +61,15 @@ define([], function(){
 					if(applesTaken[x][0] >= frame)
 						break;
 				return x? applesTaken[x - 1][1] : 0;
+			},
+
+			gravity: function(frame){
+				if(gravityChanges.length == 0) // returns empty string if gravity is default for whole rec
+					return "";
+				for(var x = 0; x < gravityChanges.length; x++)
+					if(gravityChanges[x][0] >= frame)
+						break;
+				return x? gravityChanges[x - 1][1] : "down";
 			},
 
 			draw: function(canv, lgr, frame, x, y, scale){
