@@ -99,11 +99,33 @@ define([], function(){
 	return function(path, mkImage, mkCanv){
 		var r = { _ident: {}, picts: {} };
 
+		var numLoading = 0;
+		var listeners = [];
+
+		function allLoaded(){
+			var ls = listeners;
+			listeners = [];
+			ls.forEach(function(f){
+				f();
+			});
+		}
+
+		// will call the given function the next time there are no images loading
+		// optimally, should be called after trying to render a frame, so it's known
+		//   that all required images are ready on the second render
+		r.whenLoaded = function(l){
+			if(numLoading > 0)
+				listeners.push(l);
+			else
+				l();
+		};
+
 		function lazy(path, name, cont){
 			var loaded = false, img, pict;
 
 			function requested(){
 				if(!img){
+					++numLoading;
 					img = mkImage();
 					img.src = path;
 					img.onload = function(){
@@ -113,6 +135,8 @@ define([], function(){
 						loaded = true;
 						if(cont)
 							cont(pict);
+						if(--numLoading == 0)
+							allLoaded();
 					};
 					return false;
 				}
