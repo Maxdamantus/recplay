@@ -4,8 +4,12 @@ define([], function(){
 	return function binReader(data){
 		var pos = 0;
 
+		function end(){
+			return pos >= data.length;
+		}
+
 		function seek(p){
-			if(p >= data.length)
+			if(p > data.length)
 				throw new Error("out of range: " + p);
 			pos = p;
 		}
@@ -108,6 +112,7 @@ define([], function(){
 		}
 
 		return {
+			end: end,
 			seek: seek,
 			byte: byte,
 			seq: seq,
