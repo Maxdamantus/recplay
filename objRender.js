@@ -35,20 +35,25 @@ define([], function(){
 		var applesTaken = [];
 		var gravityChanges = [];
 		void function(){
-			if(!recReader)
-				return;
-			var count = recReader.eventCount();
-			for(var x = 0; x < count; x++)
-				recReader.event(x, function(time, info, type){
-					if(type == 0) // TODO: check it's actually there?
-						if(objs.length > info && objs[info].type == "ap" && !("taken" in objs[info])){ // TODO: maybe track gravity here?
-							var frame = time/.01456;
-							objs[info].taken = frame;
-							applesTaken.push([frame, applesTaken.length + 1]);
-							if(objs[info].grav > 0)
-								gravityChanges.push([frame, ["up", "down", "left", "right"][objs[info].grav - 1]]);
-						}
-				});
+			for(var rec = 0, recR = recReader; recR; recR = recR.next, rec++){
+				var count = recR.eventCount();
+				var gravC = [];
+				for(var x = 0; x < count; x++)
+					recR.event(x, function(time, info, type){
+						if(type == 0) // TODO: check it's actually there?
+							if(objs.length > info && objs[info].type == "ap" && !("taken" in objs[info])){ // TODO: maybe track gravity here?
+								var frame = time/.01456;
+								objs[info].taken = frame;
+								applesTaken.push([frame, rec]);
+								if(objs[info].grav > 0)
+									gravC.push([frame, ["up", "down", "left", "right"][objs[info].grav - 1]]);
+							}
+					});
+				gravityChanges.push(gravC);
+			}
+			applesTaken.sort(function(a, b){
+				return (a[0] > b[0]) - (a[0] < b[0]);
+			});
 		}();
 
 		return {
@@ -56,20 +61,21 @@ define([], function(){
 				return appleCount;
 			},
 
-			applesTaken: function(frame){
+			applesTaken: function(frame, rec){
 				for(var x = 0; x < applesTaken.length; x++)
 					if(applesTaken[x][0] >= frame)
 						break;
-				return x? applesTaken[x - 1][1] : 0;
+				return x;
 			},
 
-			gravity: function(frame){
-				if(gravityChanges.length == 0) // returns empty string if gravity is default for whole rec
+			gravity: function(frame, rec){
+				var gravC = gravityChanges[rec];
+				if(gravC.length == 0) // returns empty string if gravity is default for whole rec
 					return "";
-				for(var x = 0; x < gravityChanges.length; x++)
-					if(gravityChanges[x][0] >= frame)
+				for(var x = 0; x < gravC.length; x++)
+					if(gravC[x][0] >= frame)
 						break;
-				return x? gravityChanges[x - 1][1] : "down";
+				return x? gravC[x - 1][1] : "down";
 			},
 
 			draw: function(canv, lgr, frame, x, y, scale){
