@@ -13,13 +13,14 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 	}
 
 	return function(levRd, lgr, makeCanvas){
-		var replays, levRn, levDraw;
+		var replays, levRn;
 		var lastFrame;
 		var refFrame, refTime;
 		var invalidate;
 
+		var viewports;
+
 		var focus; // whether focus is on replays[0]
-		var offsX, offsY; // offset from start or replays[0]
 
 		var playing;
 
@@ -33,13 +34,14 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 		reset();
 
 		function reset(){
-			replays = []; levRn = levRender(levRd, lgr); levDraw = levRn.cached(6, makeCanvas);
+			replays = []; levRn = levRender(levRd, lgr);
 			lastFrame = 0;
 			refFrame = 0; refTime = Date.now();
 			invalidate = true;
 
+			viewports = [];
+
 			focus = true;
-			offsX = 0; offsY = 0;
 
 			playing = true;
 
@@ -61,6 +63,17 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 			defaultObjRn = objRender(levRd);
 		}
 
+		function getViewport(n){
+			if(!viewports[n])
+				viewports[n] = {
+					offsX: 0, offsY: 0,
+					// TODO: fix bug that prevents this from working properly:
+					// levRn: levRn.cached(4, makeCanvas)
+					levRn: levRender(levRd, lgr).cached(4, makeCanvas)
+				};
+			return viewports[n];
+		}
+
 		function setRef(){
 			refFrame = lastFrame;
 			refTime = Date.now();
@@ -71,7 +84,7 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 			if(replays.length == 0)
 				return 60*30; // animate objects for a minute
 			return replays.map(function(rp){
-				return rp.rd.frameCount();
+				return rp.frameCount;
 			}).reduce(function(a, b){
 				return Math.max(a, b);
 			}, 0) + 30;
@@ -112,14 +125,18 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 		}
 
 		function dragPosition(x, y, w, h){
-			var firstOx = offsX, firstOy = offsY;
+			var vp = focus && replays.length > 0?
+				getViewport(Math.floor(y/h*replays[0].subs.length)) :
+				getViewport(0);
+
+			var firstOx = vp.offsX, firstOy = vp.offsY;
 
 			return {
 				update: function(cx, cy){
 					dragging = true;
 					invalidate = true;
-					offsX = firstOx - (cx - x)/(48*scale);
-					offsY = firstOy - (cy - y)/(48*scale);
+					vp.offsX = firstOx - (cx - x)/(48*scale);
+					vp.offsY = firstOy - (cy - y)/(48*scale);
 				},
 
 				end: function(){}
@@ -134,7 +151,7 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 				dragging = true;
 				if(replays.length == 0)
 					return;
-				lastFrame = replays[0].rd.frameCount()*cx/w;
+				lastFrame = replays[0].frameCount*cx/w;
 				setRef();
 			}
 
@@ -152,9 +169,10 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 
 		function changeFocus(){
 			invalidate = true;
-			offsX = offsY = 0;
 			if(replays.length > 0)
 				replays.unshift(replays.pop());
+			for(var z = 0; z < viewports.length; z++)
+				viewports[z].offsX = viewports[z].offsY = 0;
 		}
 
 		function playPause(){
@@ -170,6 +188,47 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 			return "";
 		}
 
+		function drawViewport(vp, canv, x, y, w, h, frame, topRec){
+			canv.save();
+			canv.translate(x, y);
+			canv.beginPath();
+			canv.moveTo(0, 0);
+			canv.lineTo(w, 0);
+			canv.lineTo(w, h);
+			canv.lineTo(0, h);
+			canv.clip();
+
+			var centreX = vp.offsX, centreY = vp.offsY;
+			if(topRec){
+				var lf = Math.min(frame, topRec.rd.frameCount() - 1);
+				centreX += topRec.rn.bikeXi(lf);
+				centreY -= topRec.rn.bikeYi(lf);
+			}else{
+				centreX += startX;
+				centreY += startY;
+			}
+
+			var escale = 48*scale;
+			var ex = centreX - w/escale/2, ey = centreY - h/escale/2;
+			var ew = w/escale, eh = w/escale;
+
+			levRn.drawSky(canv, ex, ey, ew, eh, escale);
+			vp.levRn(canv, ex, ey, ew, eh, escale);
+			if(focus && replays.length > 0)
+				replays[0].objRn.draw(canv, lgr, Math.min(frame, replays[0].frameCount - 1), ex, ey, escale);
+			else
+				defaultObjRn.draw(canv, lgr, frame, ex, ey, escale);
+			for(var z = replays.length - 1; z >= 0; z--){
+				for(var zx = replays[z].subs.length - 1; zx >= 0; zx--)
+					if(replays[z].subs[zx] != topRec) // object identity
+						replays[z].subs[zx].rn.draw(canv, lgr, Math.min(frame, replays[z].subs[zx].rd.frameCount() - 1), ex, ey, escale);
+			}
+			if(topRec)
+				topRec.rn.draw(canv, lgr, Math.min(frame, topRec.rd.frameCount() - 1), ex, ey, escale);
+
+			canv.restore();
+		}
+
 		function drawFrame(canv, x, y, w, h, frame){
 			x = Math.floor(x); y = Math.floor(y);
 			w = Math.floor(w); h = Math.floor(h);
@@ -182,41 +241,24 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 			canv.lineTo(0, h);
 			canv.clip();
 
-			canv.clearRect(0, 0, w, h);
+			canv.fillStyle = "yellow";
+			canv.fillRect(0, 0, w, h);
 
-			var centreX = offsX, centreY = offsY;
 			if(focus && replays.length > 0){
-				var lf = Math.min(frame, replays[0].rd.frameCount() - 1);
-				centreX += replays[0].rn.bikeXi(lf);
-				centreY -= replays[0].rn.bikeYi(lf);
-			}else{
-				centreX += startX;
-				centreY += startY;
-			}
-
-			var escale = 48*scale;
-			var ex = centreX - w/escale/2, ey = centreY - h/escale/2;
-			var ew = w/escale, eh = w/escale;
-
-			levRn.drawSky(canv, ex, ey, ew, eh, escale);
-			levDraw(canv, ex, ey, ew, eh, escale);
-			if(focus && replays.length > 0)
-				replays[0].objRn.draw(canv, lgr, Math.min(frame, replays[0].rd.frameCount() - 1), ex, ey, escale);
-			else
-				defaultObjRn.draw(canv, lgr, frame, ex, ey, escale);
-			for(var z = replays.length - 1; z >= 0; z--)
-				replays[z].rn.draw(canv, lgr, Math.min(frame, replays[z].rd.frameCount() - 1), ex, ey, escale);
-			if(focus && replays.length > 0){
-				var t = Math.floor(Math.min(frame, replays[0].rd.frameCount() - 1)*100/30);
+				var vph = Math.floor(h/replays[0].subs.length);
+				for(var z = 0; z < replays[0].subs.length; z++)
+					drawViewport(getViewport(z), canv, 0, z*vph, w, vph - 1, frame, replays[0].subs[z]);
+				var t = Math.floor(Math.min(frame, replays[0].frameCount - 1)*100/30);
 				canv.font = "14px monospace";
 				canv.fillStyle = "yellow";
 				var csec = pad(2, t%100); t = Math.floor(t/100);
 				var sec = pad(2, t%60); t = Math.floor(t/60);
 				canv.fillText(t + ":" + sec + "." + csec, 10, 12*2);
 				canv.fillText(replays[0].objRn.applesTaken(frame) + "/" + replays[0].objRn.appleCount(), 10, 12*3);
-				canv.fillText(arrow(replays[0].objRn.gravity(frame)), 10, 12*4);
-				canv.fillRect(w*frame/replays[0].rd.frameCount() - 2.5, 0, 5, 12);
-			}
+//				canv.fillText(arrow(replays[0].objRn.gravity(frame, 0)), 10, 12*4);
+				canv.fillRect(w*frame/replays[0].frameCount - 2.5, 0, 5, 12);
+			}else
+				drawViewport(getViewport(0), canv, x, y, w, h, frame, null);
 			invalidate = false;
 
 			canv.restore();
@@ -255,7 +297,15 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 					lastFrame = 0;
 					setRef();
 				}
-				replays.push({ rd: recRd, rn: recRender(recRd), objRn: objRender(levRd, recRd) });
+				var replay = { objRn: objRender(levRd, recRd), subs: [] };
+				while(recRd){
+					replay.subs.push({ rd: recRd, rn: recRender(recRd), objRn: objRender(levRd, recRd) });
+					recRd = recRd.next;
+				}
+				replay.frameCount = replay.subs.reduce(function(a, b){
+					return Math.max(a, b.rd.frameCount());
+				}, 0);
+				replays.push(replay);
 				frameCount = calcFrameCount();
 				invalidate = true;
 			},
