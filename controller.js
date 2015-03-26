@@ -10,7 +10,7 @@ define(["./levReader", "./recReader", "./get", "./lgr", "./player"], function(le
 			};
 
 		function mkCanv(w, h){
-			var o = document.createElementNS("http://www.w3.org/1999/xhtml", "canvas");
+			var o = createElement("canvas");
 			o.width = w;
 			o.height = h;
 			return o;

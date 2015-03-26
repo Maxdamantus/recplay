@@ -278,7 +278,7 @@ define(["./util/quadTree"], function(quadTree){
 				pics.push(pic);
 			});
 			pics.sort(function(a, b){
-				return (a.dist < b.dist) - (a.dist > b.dist) || (a.num < b.num) - (a.num > b.num);;
+				return (a.dist < b.dist) - (a.dist > b.dist) || (a.num < b.num) - (a.num > b.num);
 			});
 
 			canv.save();
