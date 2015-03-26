@@ -401,6 +401,7 @@ define(["./util/quadTree"], function(quadTree){
 		function cached(num, mkCanv){
 			var cscale, xp, yp, wp, hp;
 			var canvs = [];
+			var cacheLgrIdent;
 
 			function update(which, canv){
 				var x = which%num, y = Math.floor(which/num);
@@ -416,7 +417,8 @@ define(["./util/quadTree"], function(quadTree){
 				h = Math.ceil(h*scale);
 				x = Math.floor(x*scale);
 				y = Math.floor(y*scale);
-				if(lgr._ident != lgrIdent || scale != cscale || Math.ceil(w/(num - 1)) != wp || Math.ceil(h/(num - 1)) != hp || !rectsOverlap(xp, yp, wp*num, hp*num, x, y, w, h)){
+				if(lgr._ident != lgrIdent || cacheLgrIdent != lgrIdent || scale != cscale || Math.ceil(w/(num - 1)) != wp || Math.ceil(h/(num - 1)) != hp || !rectsOverlap(xp, yp, wp*num, hp*num, x, y, w, h)){
+					cacheLgrIdent = lgrIdent;
 					wp = Math.ceil(w/(num - 1));
 					hp = Math.ceil(h/(num - 1));
 					xp = x - Math.floor(wp/2);

@@ -67,9 +67,7 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 			if(!viewports[n])
 				viewports[n] = {
 					offsX: 0, offsY: 0,
-					// TODO: fix bug that prevents this from working properly:
-					// levRn: levRn.cached(4, makeCanvas)
-					levRn: levRender(levRd, lgr).cached(4, makeCanvas)
+					levRn: levRn.cached(4, makeCanvas)
 				};
 			return viewports[n];
 		}
@@ -246,8 +244,9 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 
 			if(focus && replays.length > 0){
 				var vph = Math.floor(h/replays[0].subs.length);
+				// the last viewport gets an extra pixel when h%2 == .subs.length%2
 				for(var z = 0; z < replays[0].subs.length; z++)
-					drawViewport(getViewport(z), canv, 0, z*vph, w, vph - 1, frame, replays[0].subs[z]);
+					drawViewport(getViewport(z), canv, 0, z*vph, w, vph - (z < replays[0].subs.length - 1), frame, replays[0].subs[z]);
 				var t = Math.floor(Math.min(frame, replays[0].frameCount - 1)*100/30);
 				canv.font = "14px monospace";
 				canv.fillStyle = "yellow";
