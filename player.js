@@ -188,42 +188,41 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 
 		function drawViewport(vp, canv, x, y, w, h, frame, topRec){
 			canv.save();
-			canv.translate(x, y);
-			canv.beginPath();
-			canv.moveTo(0, 0);
-			canv.lineTo(w, 0);
-			canv.lineTo(w, h);
-			canv.lineTo(0, h);
-			canv.clip();
+				canv.translate(x, y);
+				canv.beginPath();
+				canv.moveTo(0, 0);
+				canv.lineTo(w, 0);
+				canv.lineTo(w, h);
+				canv.lineTo(0, h);
+				canv.clip();
 
-			var centreX = vp.offsX, centreY = vp.offsY;
-			if(topRec){
-				var lf = Math.min(frame, topRec.rd.frameCount() - 1);
-				centreX += topRec.rn.bikeXi(lf);
-				centreY -= topRec.rn.bikeYi(lf);
-			}else{
-				centreX += startX;
-				centreY += startY;
-			}
+				var centreX = vp.offsX, centreY = vp.offsY;
+				if(topRec){
+					var lf = Math.min(frame, topRec.rd.frameCount() - 1);
+					centreX += topRec.rn.bikeXi(lf);
+					centreY -= topRec.rn.bikeYi(lf);
+				}else{
+					centreX += startX;
+					centreY += startY;
+				}
 
-			var escale = 48*scale;
-			var ex = centreX - w/escale/2, ey = centreY - h/escale/2;
-			var ew = w/escale, eh = w/escale;
+				var escale = 48*scale;
+				var ex = centreX - w/escale/2, ey = centreY - h/escale/2;
+				var ew = w/escale, eh = w/escale;
 
-			levRn.drawSky(canv, ex, ey, ew, eh, escale);
-			vp.levRn(canv, ex, ey, ew, eh, escale);
-			if(focus && replays.length > 0)
-				replays[0].objRn.draw(canv, lgr, Math.min(frame, replays[0].frameCount - 1), ex, ey, escale);
-			else
-				defaultObjRn.draw(canv, lgr, frame, ex, ey, escale);
-			for(var z = replays.length - 1; z >= 0; z--){
-				for(var zx = replays[z].subs.length - 1; zx >= 0; zx--)
-					if(replays[z].subs[zx] != topRec) // object identity
-						replays[z].subs[zx].rn.draw(canv, lgr, Math.min(frame, replays[z].subs[zx].rd.frameCount() - 1), ex, ey, escale);
-			}
-			if(topRec)
-				topRec.rn.draw(canv, lgr, Math.min(frame, topRec.rd.frameCount() - 1), ex, ey, escale);
-
+				levRn.drawSky(canv, ex, ey, ew, eh, escale);
+				vp.levRn(canv, ex, ey, ew, eh, escale);
+				if(focus && replays.length > 0)
+					replays[0].objRn.draw(canv, lgr, Math.min(frame, replays[0].frameCount - 1), ex, ey, escale);
+				else
+					defaultObjRn.draw(canv, lgr, frame, ex, ey, escale);
+				for(var z = replays.length - 1; z >= 0; z--){
+					for(var zx = replays[z].subs.length - 1; zx >= 0; zx--)
+						if(replays[z].subs[zx] != topRec) // object identity
+							replays[z].subs[zx].rn.draw(canv, lgr, Math.min(frame, replays[z].subs[zx].rd.frameCount() - 1), ex, ey, escale);
+				}
+				if(topRec)
+					topRec.rn.draw(canv, lgr, Math.min(frame, topRec.rd.frameCount() - 1), ex, ey, escale);
 			canv.restore();
 		}
 
@@ -231,35 +230,34 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 			x = Math.floor(x); y = Math.floor(y);
 			w = Math.floor(w); h = Math.floor(h);
 			canv.save();
-			canv.translate(x, y);
-			canv.beginPath();
-			canv.moveTo(0, 0);
-			canv.lineTo(w, 0);
-			canv.lineTo(w, h);
-			canv.lineTo(0, h);
-			canv.clip();
+				canv.translate(x, y);
+				canv.beginPath();
+				canv.moveTo(0, 0);
+				canv.lineTo(w, 0);
+				canv.lineTo(w, h);
+				canv.lineTo(0, h);
+				canv.clip();
 
-			canv.fillStyle = "yellow";
-			canv.fillRect(0, 0, w, h);
-
-			if(focus && replays.length > 0){
-				var vph = Math.floor(h/replays[0].subs.length);
-				// the last viewport gets an extra pixel when h%2 == .subs.length%2
-				for(var z = 0; z < replays[0].subs.length; z++)
-					drawViewport(getViewport(z), canv, 0, z*vph, w, vph - (z < replays[0].subs.length - 1), frame, replays[0].subs[z]);
-				var t = Math.floor(Math.min(frame, replays[0].frameCount - 1)*100/30);
-				canv.font = "14px monospace";
 				canv.fillStyle = "yellow";
-				var csec = pad(2, t%100); t = Math.floor(t/100);
-				var sec = pad(2, t%60); t = Math.floor(t/60);
-				canv.fillText(t + ":" + sec + "." + csec, 10, 12*2);
-				canv.fillText(replays[0].objRn.applesTaken(frame) + "/" + replays[0].objRn.appleCount(), 10, 12*3);
-//				canv.fillText(arrow(replays[0].objRn.gravity(frame, 0)), 10, 12*4);
-				canv.fillRect(w*frame/replays[0].frameCount - 2.5, 0, 5, 12);
-			}else
-				drawViewport(getViewport(0), canv, x, y, w, h, frame, null);
-			invalidate = false;
+				canv.fillRect(0, 0, w, h);
 
+				if(focus && replays.length > 0){
+					var vph = Math.floor(h/replays[0].subs.length);
+					// the last viewport gets an extra pixel when h%2 == .subs.length%2
+					for(var z = 0; z < replays[0].subs.length; z++)
+						drawViewport(getViewport(z), canv, 0, z*vph, w, vph - (z < replays[0].subs.length - 1), frame, replays[0].subs[z]);
+					var t = Math.floor(Math.min(frame, replays[0].frameCount - 1)*100/30);
+					canv.font = "14px monospace";
+					canv.fillStyle = "yellow";
+					var csec = pad(2, t%100); t = Math.floor(t/100);
+					var sec = pad(2, t%60); t = Math.floor(t/60);
+					canv.fillText(t + ":" + sec + "." + csec, 10, 12*2);
+					canv.fillText(replays[0].objRn.applesTaken(frame) + "/" + replays[0].objRn.appleCount(), 10, 12*3);
+	//				canv.fillText(arrow(replays[0].objRn.gravity(frame, 0)), 10, 12*4);
+					canv.fillRect(w*frame/replays[0].frameCount - 2.5, 0, 5, 12);
+				}else
+					drawViewport(getViewport(0), canv, x, y, w, h, frame, null);
+				invalidate = false;
 			canv.restore();
 		};
 
