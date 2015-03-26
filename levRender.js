@@ -287,66 +287,25 @@ define(["./util/quadTree"], function(quadTree){
 			canv.restore();
 
 			canv.save();
-
-			canv.beginPath();
-			canv.moveTo(0, 0);
-			canv.lineTo(w*scale, 0);
-			canv.lineTo(w*scale, h*scale);
-			canv.lineTo(0, h*scale);
-
-			canv.translate(-x*scale, -y*scale);
-
-			traverse(polyTree, false, function(isSolid, verts){
-				canv.moveTo(scale*verts[verts.length - 1][0], scale*verts[verts.length - 1][1]);
-				for(var z = verts.length - 2; z >= 0; z--)
-					canv.lineTo(scale*verts[z][0], scale*verts[z][1]);
-			});
-
-			canv.translate(x*scale, y*scale);
-			canv.clip(); // clip isn't antialiased in Chromium—different with destination-out
-			void function(){
-				// TODO: check that it's not accessing something it shouldn't
-				var img = lgr.picts[reader.ground()] || lgr.picts.ground;
-				var px = Math.floor(x*scale), py = Math.floor(y*scale);
-				var pw = Math.floor(w*scale), ph = Math.floor(h*scale);
-				var offsX = x >= 0? px%img.width : img.width - -px%img.width;
-				var offsY = y >= 0? py%img.height : img.height - -py%img.height;
-				canv.save();
-					canv.translate(-img.width - offsX, -img.height - offsY);
-					img.repeat(canv, pw + img.width*2, ph + img.height*2);
-				canv.restore();
-			}();
-
-//			canv.restore();
-			canv.save();
-				canv.translate(-x*scale, -y*scale);
-				drawPictures(pics, canv, scale, "g", x, y, w, h); // ground
-			canv.restore();
-
-			canv.translate(-x*scale, -y*scale);
-
-			canv.save();
 				canv.beginPath();
-				grass.traverse(x, y, w, h, function(grassX, grassY, pict){
-					canv.save();
-						canv.translate(grassX*scale, grassY*scale);
-						var b = pict.borders;
-						canv.scale(scale/48, scale/48);
-						canv.moveTo(0, -24);
-						for(var z = 0; z < b.length; z++){
-							canv.lineTo(z, b[z] + 1);
-							canv.lineTo(z + 1, b[z] + 1);
-						}
-						canv.lineTo(pict.width, -24);
-						canv.closePath();
-					canv.restore();
+				canv.moveTo(0, 0);
+				canv.lineTo(w*scale, 0);
+				canv.lineTo(w*scale, h*scale);
+				canv.lineTo(0, h*scale);
+
+				canv.translate(-x*scale, -y*scale);
+
+				traverse(polyTree, false, function(isSolid, verts){
+					canv.moveTo(scale*verts[verts.length - 1][0], scale*verts[verts.length - 1][1]);
+					for(var z = verts.length - 2; z >= 0; z--)
+						canv.lineTo(scale*verts[z][0], scale*verts[z][1]);
 				});
-				canv.clip();
 
 				canv.translate(x*scale, y*scale);
-
+				canv.clip(); // clip isn't antialiased in Chromium—different with destination-out
 				void function(){
-					var img = lgr.picts.qgrass;
+					// TODO: check that it's not accessing something it shouldn't
+					var img = lgr.picts[reader.ground()] || lgr.picts.ground;
 					var px = Math.floor(x*scale), py = Math.floor(y*scale);
 					var pw = Math.floor(w*scale), ph = Math.floor(h*scale);
 					var offsX = x >= 0? px%img.width : img.width - -px%img.width;
@@ -356,22 +315,58 @@ define(["./util/quadTree"], function(quadTree){
 						img.repeat(canv, pw + img.width*2, ph + img.height*2);
 					canv.restore();
 				}();
-			canv.restore();
 
-
-			grass.traverse(x, y, w, h, function(grassX, grassY, pict){
 				canv.save();
-					canv.translate(grassX*scale, grassY*scale);
-					canv.scale(scale/48, scale/48);
-					pict.drawAt(canv);
+					canv.translate(-x*scale, -y*scale);
+					drawPictures(pics, canv, scale, "g", x, y, w, h); // ground
 				canv.restore();
-			});
 
+				canv.translate(-x*scale, -y*scale);
+
+				canv.save();
+					canv.beginPath();
+					grass.traverse(x, y, w, h, function(grassX, grassY, pict){
+						canv.save();
+							canv.translate(grassX*scale, grassY*scale);
+							var b = pict.borders;
+							canv.scale(scale/48, scale/48);
+							canv.moveTo(0, -24);
+							for(var z = 0; z < b.length; z++){
+								canv.lineTo(z, b[z] + 1);
+								canv.lineTo(z + 1, b[z] + 1);
+							}
+							canv.lineTo(pict.width, -24);
+							canv.closePath();
+						canv.restore();
+					});
+					canv.clip();
+
+					canv.translate(x*scale, y*scale);
+
+					void function(){
+						var img = lgr.picts.qgrass;
+						var px = Math.floor(x*scale), py = Math.floor(y*scale);
+						var pw = Math.floor(w*scale), ph = Math.floor(h*scale);
+						var offsX = x >= 0? px%img.width : img.width - -px%img.width;
+						var offsY = y >= 0? py%img.height : img.height - -py%img.height;
+						canv.save();
+							canv.translate(-img.width - offsX, -img.height - offsY);
+							img.repeat(canv, pw + img.width*2, ph + img.height*2);
+						canv.restore();
+					}();
+				canv.restore();
+
+				grass.traverse(x, y, w, h, function(grassX, grassY, pict){
+					canv.save();
+						canv.translate(grassX*scale, grassY*scale);
+						canv.scale(scale/48, scale/48);
+						pict.drawAt(canv);
+					canv.restore();
+				});
 			canv.restore();
 
 			canv.save();
-			canv.translate(-x*scale, -y*scale);
-
+				canv.translate(-x*scale, -y*scale);
 			canv.restore();
 
 			canv.save();
@@ -477,8 +472,8 @@ define(["./util/quadTree"], function(quadTree){
 				if((x = x%img.width) < 0)
 					x = img.width + x;
 				canv.save();
-				canv.translate(-x, 0);
-				img.repeat(canv, w + img.width, h);
+					canv.translate(-x, 0);
+					img.repeat(canv, w + img.width, h);
 				canv.restore();
 			}
 		};

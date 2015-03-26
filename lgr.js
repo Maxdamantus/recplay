@@ -58,15 +58,15 @@ define([], function(){
 
 	function loading(canv){
 		canv.save();
-		canv.lineWidth = 1/20;
-		canv.strokeStyle = "red";
-		canv.beginPath();
-		canv.moveTo(0.5, 0);
-		canv.lineTo(0.5, 1);
-		canv.moveTo(0, 0.5);
-		canv.lineTo(1, 0.5);
-		canv.arc(0.5, 0.5, 0.5, 0, Math.PI*2);
-		canv.stroke();
+			canv.lineWidth = 1/20;
+			canv.strokeStyle = "red";
+			canv.beginPath();
+			canv.moveTo(0.5, 0);
+			canv.lineTo(0.5, 1);
+			canv.moveTo(0, 0.5);
+			canv.lineTo(1, 0.5);
+			canv.arc(0.5, 0.5, 0.5, 0, Math.PI*2);
+			canv.stroke();
 		canv.restore();
 	}
 
@@ -162,8 +162,8 @@ define([], function(){
 						canv.drawImage(img, 0, 0);
 					else{
 						canv.save();
-						canv.scale(48, 48);
-						loading(canv);
+							canv.scale(48, 48);
+							loading(canv);
 						canv.restore();
 					}
 				},
@@ -174,19 +174,19 @@ define([], function(){
 						canv.fillRect(0, 0, w, h);
 					}else{
 						canv.save();
-						canv.fillStyle = "blue";
-						canv.fillRect(0, 0, w, h);
-						canv.beginPath();
-						canv.strokeStyle = "white";
-						for(var x = 0; x <= w; x += 20){
-							canv.moveTo(x, 0);
-							canv.lineTo(x, h);
-						}
-						for(var y = 0; y <= h; y += 20){
-							canv.moveTo(0, y);
-							canv.lineTo(w, y);
-						}
-						canv.stroke();
+							canv.fillStyle = "blue";
+							canv.fillRect(0, 0, w, h);
+							canv.beginPath();
+							canv.strokeStyle = "white";
+							for(var x = 0; x <= w; x += 20){
+								canv.moveTo(x, 0);
+								canv.lineTo(x, h);
+							}
+							for(var y = 0; y <= h; y += 20){
+								canv.moveTo(0, y);
+								canv.lineTo(w, y);
+							}
+							canv.stroke();
 						canv.restore();
 					}
 				},
@@ -195,20 +195,20 @@ define([], function(){
 					if(requested()){
 						num = Math.floor(num);
 						canv.save();
-						canv.beginPath();
-						canv.moveTo(0, 0);
-						canv.lineTo(1, 0);
-						canv.lineTo(1, 1);
-						canv.lineTo(0, 1);
-						canv.clip();
-						canv.drawImage(img, -num, 0, of, 1);
+							canv.beginPath();
+							canv.moveTo(0, 0);
+							canv.lineTo(1, 0);
+							canv.lineTo(1, 1);
+							canv.lineTo(0, 1);
+							canv.clip();
+							canv.drawImage(img, -num, 0, of, 1);
 						canv.restore();
 					}else{
 						canv.save();
-						canv.translate(0.5, 0.5);
-						canv.rotate(Math.PI*2*num/of);
-						canv.translate(-0.5, -0.5);
-						loading(canv);
+							canv.translate(0.5, 0.5);
+							canv.rotate(Math.PI*2*num/of);
+							canv.translate(-0.5, -0.5);
+							loading(canv);
 						canv.restore();
 					}
 				}
