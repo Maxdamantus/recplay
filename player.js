@@ -1,6 +1,8 @@
 define(["./levRender", "./recRender", "./objRender"], function(levRender, recRender, objRender){
 	"use strict";
 
+	var isMozilla = typeof navigator != "undefined" && navigator.userAgent.indexOf("Firefox") >= 0;
+
 	function signum(n){
 		return n < 0? -1 : n > 0? 1 : 0;
 	}
@@ -67,7 +69,9 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 			if(!viewports[n])
 				viewports[n] = {
 					offsX: 0, offsY: 0,
-					levRn: levRn.cached(4, makeCanvas)
+					// hack! Firefox seems to perform a lot better without the cache
+					// suspect it has to do with the offscreen antialiasing it's doing
+					levRn: isMozilla? levRn.draw : levRn.cached(4, makeCanvas)
 				};
 			return viewports[n];
 		}
@@ -186,6 +190,11 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 			return "";
 		}
 
+		function eround(n){
+			var escale = 48*scale;
+			return Math.round(n*escale)/escale;
+		}
+
 		function drawViewport(vp, canv, x, y, w, h, frame, topRec){
 			canv.save();
 				canv.translate(x, y);
@@ -207,8 +216,8 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 				}
 
 				var escale = 48*scale;
-				var ex = centreX - w/escale/2, ey = centreY - h/escale/2;
-				var ew = w/escale, eh = w/escale;
+				var ex = eround(centreX - w/escale/2), ey = eround(centreY - h/escale/2);
+				var ew = eround(w/escale), eh = eround(w/escale);
 
 				levRn.drawSky(canv, ex, ey, ew, eh, escale);
 				vp.levRn(canv, ex, ey, ew, eh, escale);
