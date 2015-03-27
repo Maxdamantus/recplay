@@ -104,8 +104,8 @@ define(["./util/quadTree"], function(quadTree){
 						var img = lgr.picts[picname];
 						if(img && img.width !== undefined && img.height !== undefined){
 							img.touch();
-							maxImgW = Math.max(maxImgW, img.width);
-							maxImgH = Math.max(maxImgH, img.height);
+							maxImgW = Math.max(maxImgW, img.width/48);
+							maxImgH = Math.max(maxImgH, img.height/48);
 						}
 					});
 				}
