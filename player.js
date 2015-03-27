@@ -154,6 +154,10 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 				if(replays.length == 0)
 					return;
 				lastFrame = replays[0].frameCount*cx/w;
+				if(lastFrame < 0)
+					lastFrame = 0;
+				if(lastFrame >= frameCount)
+					lastFrame = frameCount - 1;
 				setRef();
 			}
 
