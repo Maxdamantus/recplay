@@ -226,9 +226,9 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 				levRn.drawSky(canv, ex, ey, ew, eh, escale);
 				vp.levRn(canv, ex, ey, ew, eh, escale);
 				if(focus && replays.length > 0)
-					replays[0].objRn.draw(canv, lgr, Math.min(frame, replays[0].frameCount - 1), ex, ey, escale);
+					replays[0].objRn.draw(canv, lgr, Math.min(frame, replays[0].frameCount - 1), ex, ey, ew, eh, escale);
 				else
-					defaultObjRn.draw(canv, lgr, frame, ex, ey, escale);
+					defaultObjRn.draw(canv, lgr, frame, ex, ey, ew, eh, escale);
 				for(var z = replays.length - 1; z >= 0; z--){
 					for(var zx = replays[z].subs.length - 1; zx >= 0; zx--)
 						if(replays[z].subs[zx] != topRec) // object identity

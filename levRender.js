@@ -1,17 +1,8 @@
-define(["./util/quadTree"], function(quadTree){
+define(["./util/quadTree", "./util/geom"], function(quadTree, geom){
 	"use strict";
 
 	function hypot(a, b){
 		return Math.sqrt(a*a + b*b);
-	}
-
-	// assumes widths and heights are positive
-	function rectsOverlap(x1, y1, w1, h1, x2, y2, w2, h2){
-		return ( // parentheses required! ASI!
-			x1 + w1 >= x2 &&
-			y1 + h1 >= y2 &&
-			x2 + w2 >= x1 &&
-			y2 + h2 >= y1);
 	}
 
 	return function levRender(reader, lgr){
@@ -227,7 +218,7 @@ define(["./util/quadTree"], function(quadTree){
 				if(pic.clipping != clipping)
 					return;
 				if(img && img.draw){
-					if(!rectsOverlap(pic.x, pic.y, img.width, img.height, x, y, w, h))
+					if(!geom.rectsOverlap(pic.x, pic.y, img.width, img.height, x, y, w, h))
 						return;
 					canv.save();
 						canv.translate(pic.x*scale, pic.y*scale);
@@ -239,7 +230,7 @@ define(["./util/quadTree"], function(quadTree){
 				img = lgr.picts[pic.texture];
 				var mask = lgr.picts[pic.mask];
 				if(img && img.draw && mask && mask.draw){
-					if(!rectsOverlap(pic.x, pic.y, mask.width, mask.height, x, y, w, h))
+					if(!geom.rectsOverlap(pic.x, pic.y, mask.width, mask.height, x, y, w, h))
 						return;
 					// TODO: scale textures, fix otherwise
 					var px = Math.round(pic.x*scale), py = Math.round(pic.y*scale);
@@ -412,7 +403,7 @@ define(["./util/quadTree"], function(quadTree){
 				h = Math.ceil(h*scale);
 				x = Math.floor(x*scale);
 				y = Math.floor(y*scale);
-				if(lgr._ident != lgrIdent || cacheLgrIdent != lgrIdent || scale != cscale || Math.ceil(w/(num - 1)) != wp || Math.ceil(h/(num - 1)) != hp || !rectsOverlap(xp, yp, wp*num, hp*num, x, y, w, h)){
+				if(lgr._ident != lgrIdent || cacheLgrIdent != lgrIdent || scale != cscale || Math.ceil(w/(num - 1)) != wp || Math.ceil(h/(num - 1)) != hp || !geom.rectsOverlap(xp, yp, wp*num, hp*num, x, y, w, h)){
 					cacheLgrIdent = lgrIdent;
 					wp = Math.ceil(w/(num - 1));
 					hp = Math.ceil(h/(num - 1));
