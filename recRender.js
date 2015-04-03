@@ -165,7 +165,7 @@ define([], function(){
 		var headYi = interpolate(reader.headY);
 
 		// (x, y): top left in Elma coordinates
-		function draw(canv, lgr, frame, x, y, scale){
+		function draw(canv, lgr, shirt, frame, x, y, scale){
 			canv.save();
 				canv.translate(/*Math.ceil*/(scale*(-x + bikeXi(frame))), /*Math.ceil*/(scale*(-y - bikeYi(frame))));
 				canv.scale(scale, scale);
@@ -255,7 +255,14 @@ define([], function(){
 							canv.translate(17/48, 9.25/48);
 							canv.rotate(Math.PI + 2/3);
 							canv.scale(100/48/3, 58/48/3);
-							lgr.q1body.draw(canv);
+							if(shirt && shirt.touch()){
+								// assumes shirts are rotated as on EOL site
+								canv.translate(0.5, 0.5);
+								canv.rotate(Math.PI/2);
+								canv.translate(-0.5, -0.5);
+								shirt.draw(canv);
+							}else
+								lgr.q1body.draw(canv);
 						canv.restore();
 
 						var shoulderx = 0/48, shouldery = -17.5/48;

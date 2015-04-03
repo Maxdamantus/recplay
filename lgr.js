@@ -97,7 +97,7 @@ define([], function(){
 	}
 
 	return function(path, mkImage, mkCanv){
-		var r = { _ident: {}, picts: {} };
+		var r = { _ident: {}, picts: {}, lazy: lazy };
 
 		var numLoading = 0;
 		var listeners = [];
@@ -120,8 +120,20 @@ define([], function(){
 				l();
 		};
 
-		function lazy(path, name, cont){
+		function lazy(path, cont){
+			return lazy_(path, null, cont);
+		}
+
+		function lazy_(path, name, cont){
 			var loaded = false, img, pict;
+
+			function ondone(){
+				r._ident = {};
+				if(cont)
+					cont(pict);
+				if(--numLoading == 0)
+					allLoaded();
+			}
 
 			function requested(){
 				if(!img){
@@ -129,15 +141,12 @@ define([], function(){
 					img = mkImage();
 					img.src = path;
 					img.onload = function(){
+						loaded = true;
 						pict.width = img.width;
 						pict.height = img.height;
-						r._ident = {};
-						loaded = true;
-						if(cont)
-							cont(pict);
-						if(--numLoading == 0)
-							allLoaded();
+						ondone();
 					};
+					img.onerror = ondone;
 					return false;
 				}
 				return loaded;
@@ -216,7 +225,7 @@ define([], function(){
 		}
 
 		imgs.forEach(function(i){
-			r[i] = lazy(path + "/" + i + ".png", i);
+			r[i] = lazy_(path + "/" + i + ".png", i);
 		});
 
 		var grassUp = [], grassDown = [], grassUpCount = 0, grassDownCount = 0;
@@ -245,7 +254,7 @@ define([], function(){
 				};
 			}
 
-			var img = r.picts[i] = lazy(path + "/picts/" + i + ".png", i, add);
+			var img = r.picts[i] = lazy_(path + "/picts/" + i + ".png", i, add);
 			img.type = info[1];
 			img.dist = info[2];
 			img.clipping = info[3];

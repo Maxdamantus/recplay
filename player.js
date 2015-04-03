@@ -230,12 +230,14 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 				else
 					defaultObjRn.draw(canv, lgr, frame, ex, ey, ew, eh, escale);
 				for(var z = replays.length - 1; z >= 0; z--){
-					for(var zx = replays[z].subs.length - 1; zx >= 0; zx--)
-						if(replays[z].subs[zx] != topRec) // object identity
-							replays[z].subs[zx].rn.draw(canv, lgr, Math.min(frame, replays[z].subs[zx].rd.frameCount() - 1), ex, ey, escale);
+					for(var zx = replays[z].subs.length - 1; zx >= 0; zx--){
+						var rec = replays[z].subs[zx];
+						if(rec != topRec) // object identity
+							rec.rn.draw(canv, lgr, rec.shirt, Math.min(frame, rec.rd.frameCount() - 1), ex, ey, escale);
+					}
 				}
 				if(topRec)
-					topRec.rn.draw(canv, lgr, Math.min(frame, topRec.rd.frameCount() - 1), ex, ey, escale);
+					topRec.rn.draw(canv, lgr, topRec.shirt, Math.min(frame, topRec.rd.frameCount() - 1), ex, ey, escale);
 			canv.restore();
 		}
 
@@ -302,15 +304,17 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 				drawFrame(canv, x, y, w, h, lastFrame);
 			},
 
-			addReplay: function(recRd){
+			// shirts should be created by lgr.lazy
+			addReplay: function(recRd, shirts){
 				if(replays.length == 0){
 					lastFrame = 0;
 					setRef();
 				}
 				var replay = { objRn: objRender(levRd, recRd), subs: [] };
 				while(recRd){
-					replay.subs.push({ rd: recRd, rn: recRender(recRd), objRn: objRender(levRd, recRd) });
+					replay.subs.push({ rd: recRd, rn: recRender(recRd), objRn: objRender(levRd, recRd), shirt: shirts[0] || null });
 					recRd = recRd.next;
+					shirts = shirts.slice(1);
 				}
 				replay.frameCount = replay.subs.reduce(function(a, b){
 					return Math.max(a, b.rd.frameCount());
