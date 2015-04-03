@@ -1,4 +1,4 @@
-define([], function(){
+define(["./geom"], function(geom){
 	"use strict";
 
 	// an append-only quad tree
@@ -18,16 +18,6 @@ define([], function(){
 
 	var Tree = sum(["nil", "tip", "branch"]);
 	var nil = Tree.nil();
-
-	// TODO: duplicated code!
-	// assumes widths and heights are positive
-	function rectsOverlap(x1, y1, w1, h1, x2, y2, w2, h2){
-		return ( // parentheses required! ASI!
-			x1 + w1 >= x2 &&
-			y1 + h1 >= y2 &&
-			x2 + w2 >= x1 &&
-			y2 + h2 >= y1);
-	}
 
 	return function quadTree(minW){
 		// root must be a (quad) branch
@@ -102,7 +92,7 @@ define([], function(){
 						for(var sx = 0; sx < 2; sx++){
 							var dx = sx == 0? -1 : 1;
 							var dy = sy == 0? -1 : 1;
-							if(rectsOverlap(x, y, w, h, tx - tw + sx*tw, ty - tw + sy*tw, tw, tw))
+							if(geom.rectsOverlap(x, y, w, h, tx - tw + sx*tw, ty - tw + sy*tw, tw, tw))
 								traverse_(quads[n], tx + dx*tw/2, ty + dy*tw/2, tw/2, x, y, w, h, fn);
 							n++;
 						}
@@ -115,7 +105,7 @@ define([], function(){
 		}
 
 		function dbgdraw_(canv, tree, tx, ty, tw, x, y, w, h){
-			if(!rectsOverlap(x, y, w, h, tx - tw, ty - tw, tw*2, tw*2))
+			if(!geom.rectsOverlap(x, y, w, h, tx - tw, ty - tw, tw*2, tw*2))
 				return;
 			canv.strokeRect(tx - tw, ty - tw, tw*2, tw*2);
 

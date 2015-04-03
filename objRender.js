@@ -1,4 +1,4 @@
-define([], function(){
+define(["./util/geom"], function(geom){
 	"use strict";
 
 	return function objRender(levReader, recReader){
@@ -78,12 +78,14 @@ define([], function(){
 				return x? gravC[x - 1][1] : "down";
 			},
 
-			draw: function(canv, lgr, frame, x, y, scale){
+			draw: function(canv, lgr, frame, x, y, w, h, scale){
 				canv.save();
 					canv.scale(scale, scale);
 					canv.translate(-x, -y);
 
 					for(var z = 0; z < objs.length; z++){
+						if(!geom.rectsOverlap(x, y, w, h, objs[z].pos[0] - 20/48, objs[z].pos[1] - 20/48, 40/48, 40/48))
+							continue;
 						canv.save();
 							canv.translate(objs[z].pos[0], objs[z].pos[1]);
 							canv.scale(40/48, 40/48);

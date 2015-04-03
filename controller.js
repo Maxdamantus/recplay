@@ -21,9 +21,10 @@ define(["./levReader", "./recReader", "./get", "./lgr", "./player"], function(le
 			var canvas = canvase.getContext("2d");
 			elem.appendChild(canvase);
 			get(levName, function(lev){
-				var pl = player(levReader(lev), window.lgr = lgr(imagesPath, function(){
+				var pllgr = lgr(imagesPath, function(){
 					return createElement("img");
-				}, mkCanv), mkCanv);
+				}, mkCanv);
+				var pl = player(levReader(lev), pllgr, mkCanv);
 				window.pl = pl; // just so it's accessible in the console
 
 				function listener(e){
@@ -90,9 +91,11 @@ define(["./levReader", "./recReader", "./get", "./lgr", "./player"], function(le
 				});
 
 				cont({
-					loadReplay: function(recName){
+					loadReplay: function(recName, shirts){
 						get(recName, function(rec){
-							pl.addReplay(recReader(rec));
+							pl.addReplay(recReader(rec), !shirts? [] : shirts.map(function(s){
+								return s == null? null : pllgr.lazy(s);
+							}));
 						});
 					},
 
