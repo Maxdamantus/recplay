@@ -377,7 +377,11 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 			},
 
 			inputClick: inputClick,
-			inputDrag: inputDrag
+			inputDrag: inputDrag,
+
+			invalidate: function(){
+				invalidate = true;
+			}
 		};
 	};
 });
