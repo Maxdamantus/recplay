@@ -84,8 +84,6 @@ define(["./util/geom"], function(geom){
 					canv.translate(-x, -y);
 
 					for(var z = 0; z < objs.length; z++){
-						if(!geom.rectsOverlap(x, y, w, h, objs[z].pos[0] - 20/48, objs[z].pos[1] - 20/48, 40/48, 40/48))
-							continue;
 						canv.save();
 							canv.translate(objs[z].pos[0], objs[z].pos[1]);
 							canv.scale(40/48, 40/48);
