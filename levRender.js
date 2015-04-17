@@ -316,7 +316,7 @@ define(["./util/quadTree", "./util/geom"], function(quadTree, geom){
 
 				canv.save();
 					canv.beginPath();
-					grass.traverse(x, y, w, h, function(grassX, grassY, pict){
+					grass.traverse(x, y, w, h + 24, function(grassX, grassY, pict){
 						canv.save();
 							canv.translate(grassX*scale, grassY*scale);
 							var b = pict.borders;
