@@ -203,15 +203,8 @@ define([], function(){
 				frame: function(canv, num, of){
 					if(requested()){
 						num = Math.floor(num);
-						canv.save();
-							canv.beginPath();
-							canv.moveTo(0, 0);
-							canv.lineTo(1, 0);
-							canv.lineTo(1, 1);
-							canv.lineTo(0, 1);
-							canv.clip();
-							canv.drawImage(img, -num, 0, of, 1);
-						canv.restore();
+						var wdPer = img.width/of;
+						canv.drawImage(img, num*wdPer, 0, wdPer, img.height, 0, 0, 1, 1);
 					}else{
 						canv.save();
 							canv.translate(0.5, 0.5);
