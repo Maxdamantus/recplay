@@ -373,7 +373,10 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 						lastFrame -= 30*2.5*speed;
 						setRef();
 						break;
+					default:
+						return false;
 				}
+				return true;
 			},
 
 			inputClick: inputClick,
