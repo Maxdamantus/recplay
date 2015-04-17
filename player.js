@@ -331,6 +331,14 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 			speed: function(){ return speed; },
 			scale: function(){ return scale; },
 
+			setFrame: function(s){
+				lastFrame = s;
+				setRef();
+			},
+			frame: function(){
+				return lastFrame; // TODO: this is a hack
+			},
+
 			playPause: playPause,
 			playing: function(){ return playing; },
 

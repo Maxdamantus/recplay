@@ -10,7 +10,7 @@ define([], function(){
 	// br: length of image used after (x2, y2)
 	// by: proportional (of ih) y offset within the image the line is conceptually along
 	// ih: image height
-	function skewimage(canv, img, bx, by, br, ih, x1, y1, x2, y2){
+	function skewimage(canv, img, bx, by, br, ih, x1, y1, x2, y2, box){
 		var o = x2 - x1, a = y2 - y1;
 		canv.save();
 			canv.translate(x1, y1);
@@ -18,6 +18,11 @@ define([], function(){
 			canv.translate(-bx, -by*ih);
 			canv.scale(bx + br + hypot(o, a), ih);
 			img.draw(canv);
+			if(box){
+				canv.strokeStyle = "purple";
+				canv.lineWidth = 0.02;
+				canv.strokeRect(0, 0, 1, 1);
+			}
 		canv.restore();
 	}
 
@@ -69,12 +74,11 @@ define([], function(){
 		bx: 5/48/3, by: 0.45, br: 4/48, ih: 60/48/3
 	});
 
-
 	var armLimb = limb(true, {
-		length: 16.25/48,
+		length: 0.3234,
 		bx: 12.2/48/3, by: 0.5, br: 13/48/3, ih: -32/48/3
 	}, {
-		length: 16.25/48,
+		length: 0.3444,
 		bx: 3/48, by: 0.5, br: 13.2/48/3, ih: 22.8/48/3
 	});
 
@@ -266,22 +270,28 @@ define([], function(){
 						canv.restore();
 
 						var shoulderx = 0/48, shouldery = -17.5/48;
-						var handx = -wx - 64.5/48/3, handy = -wy - 59.6/48/3;
+						var handlex = -wx - 64.5/48/3, handley = -wy - 59.6/48/3;
+						var handx = handlex, handy = handley;
 
-						var shoulder2hand = hypot(handx - shoulderx, handy - shouldery);
-
-						var lv = lastVolt(Math.floor(frame));
+						var lv = lastVolt(frame);
 						var animlen = 28, animprop1 = 0.2;
-						var animx = shoulderx, animy = shouldery; // TODO
+						var animx = shoulderx, animy = shouldery;
 						if(lv != null && frame - lv[0] < animlen){
-							// anim: 20/100 s to move hand to new position, 75/100 s to move back
 							var animpos = (frame - lv[0])/animlen;
-							//animpos = animpos <= 6? animpos/6 : 1 - (animpos - 6)/(animlen - 6);
-							animpos = animpos <= animprop1? animpos/animprop1 : 1 - (animpos - animprop1)/(1 - animprop1);
-							if(lv[1] != turn)
-								animpos *= -1;
-							var at = Math.atan2(handy - animy, handx - animx) + animpos*2*Math.PI/3;
-							var dist = hypot(handy - animy, handx - animx);
+							var dangle, ascale;
+							if(lv[1] == turn){
+								if(animpos >= 0.25)
+									animpos = 0.25 - 0.25*(animpos - 0.25)/0.75;
+								dangle = 10.8*animpos;
+								ascale = 1 - 1.2*animpos;
+							}else{
+								if(animpos >= 0.2)
+									animpos = 0.2 - 0.2*(animpos - 0.2)/0.8;
+								dangle = -8*animpos;
+								ascale = 1 + 0.75*animpos;
+							}
+							var at = Math.atan2(handley - animy, handlex - animx) + dangle;
+							var dist = ascale*hypot(handley - animy, handlex - animx);
 							handx = animx + dist*Math.cos(at);
 							handy = animy + dist*Math.sin(at);
 						}
