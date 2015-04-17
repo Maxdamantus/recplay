@@ -35,8 +35,8 @@ define(["./levReader", "./recReader", "./get", "./lgr", "./player"], function(le
 						result = { 219: "[", 221: "]", 8: "backspace", 32: "space", 37: "left", 38: "up", 39: "right", 40: "down" }[kc];
 					if(result !== undefined){
 						console.log(result);
-						pl.inputKey(result);
-						e.preventDefault();
+						if(pl.inputKey(result))
+							e.preventDefault();
 					}
 				};
 
