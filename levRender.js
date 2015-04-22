@@ -32,7 +32,7 @@ define(["./util/quadTree", "./util/geom"], function(quadTree, geom){
 			for(var x = 0; x < tree.length; x++){
 				if(isSub(vertices[0], tree[x].vertices)){
 					// assertion: newTree non-empty or consistency error
-					if(newTree.length)
+					if(false && newTree.length) // actually, game itself doesn't care, only the editor
 						throw new Error("inconsistent!");
 					return addPoly(vertices, tree[x].inner);
 				}
