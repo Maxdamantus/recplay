@@ -168,7 +168,18 @@ define([], function(){
 		var headXi = interpolate(reader.headX);
 		var headYi = interpolate(reader.headY);
 
+		function wheel(canv, lgr, wheelX, wheelY, wheelR){
+			canv.save();
+				canv.translate(wheelX, -wheelY);
+				canv.rotate(-wheelR);
+				canv.scale(38.4/48, 38.4/48);
+				canv.translate(-0.5, -0.5);
+				lgr.wheel.draw(canv);
+			canv.restore();
+		}
+
 		// (x, y): top left in Elma coordinates
+		// arguably a microoptimisation, but it doesn't produce any objects in the JS world
 		function draw(canv, lgr, shirt, frame, x, y, scale){
 			canv.save();
 				canv.translate(/*Math.ceil*/(scale*(-x + bikeXi(frame))), /*Math.ceil*/(scale*(-y - bikeYi(frame))));
@@ -186,29 +197,30 @@ define([], function(){
 				var headX = headXi(frame)/1000;
 				var headY = headYi(frame)/1000;
 				var lastTurnF = lastTurn(frame);
+				var lv = lastVolt(frame);
 
-				canv.save(); // left wheel
-					canv.translate(leftX, -leftY);
-					canv.rotate(-leftR);
-					canv.scale(38.4/48, 38.4/48);
-					canv.translate(-0.5, -0.5);
-					lgr.wheel.draw(canv);
-				canv.restore();
+				var animlen = 28;
+				var animpos = lv != null && frame - lv[0] < animlen? (frame - lv[0])/animlen : 0;
+				var turnpos = lastTurnF >= 0 && lastTurnF + 24 > frame? (frame - lastTurnF)/24 : 0;
 
-				canv.save(); // right wheel
-					canv.translate(rightX, -rightY);
-					canv.rotate(-rightR);
-					canv.scale(38.4/48, 38.4/48);
-					canv.translate(-0.5, -0.5);
-					lgr.wheel.draw(canv);
-				canv.restore();
+				var backX = !turn? rightX : leftX;
+				var backY = !turn? rightY : leftY;
+				var backR = !turn? rightR : leftR;
+				var frontX = turn? rightX : leftX;
+				var frontY = turn? rightY : leftY;
+				var frontR = turn? rightR : leftR;
+
+				if(turnpos == 0 || turnpos > 0.5)
+					wheel(canv, lgr, backX, backY, backR);
+				if(turnpos <= 0.5)
+					wheel(canv, lgr, frontX, frontY, frontR);
 
 				canv.save();
 					canv.rotate(-bikeR);
 					if(turn)
 						canv.scale(-1, 1);
-					if(lastTurnF >= 0 && lastTurnF + 24 > frame)
-						canv.scale(turnScale((frame - lastTurnF)/24), 1);
+					if(turnpos > 0)
+						canv.scale(turnScale(turnpos), 1);
 
 					var wx, wy, a, r;
 					var hbarsX = -21.5, hbarsY = -17;
@@ -273,11 +285,8 @@ define([], function(){
 						var handlex = -wx - 64.5/48/3, handley = -wy - 59.6/48/3;
 						var handx = handlex, handy = handley;
 
-						var lv = lastVolt(frame);
-						var animlen = 28, animprop1 = 0.2;
 						var animx = shoulderx, animy = shouldery;
-						if(lv != null && frame - lv[0] < animlen){
-							var animpos = (frame - lv[0])/animlen;
+						if(animpos > 0){
 							var dangle, ascale;
 							if(lv[1] == turn){
 								if(animpos >= 0.25)
@@ -299,6 +308,11 @@ define([], function(){
 						armLimb(canv, lgr.q1up_arm, shoulderx, shouldery, lgr.q1forarm, handx, handy);
 					canv.restore();
 				canv.restore();
+
+				if(turnpos != 0 && turnpos <= 0.5)
+					wheel(canv, lgr, backX, backY, backR);
+				if(turnpos > 0.5)
+					wheel(canv, lgr, frontX, frontY, frontR);
 			canv.restore();
 		}
 
