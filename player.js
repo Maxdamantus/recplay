@@ -221,7 +221,7 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 
 				var escale = 48*scale;
 				var ex = eround(centreX - w/escale/2), ey = eround(centreY - h/escale/2);
-				var ew = eround(w/escale), eh = eround(w/escale);
+				var ew = eround(w/escale), eh = eround(h/escale);
 
 				levRn.drawSky(canv, ex, ey, ew, eh, escale);
 				vp.levRn(canv, ex, ey, ew, eh, escale);
