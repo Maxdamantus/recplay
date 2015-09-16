@@ -255,12 +255,18 @@ define(["./util/quadTree", "./util/geom"], function(quadTree, geom){
 		}
 
 		var lgrIdent = {};
+		var optIdent = {};
+		var optGrass = true;
+		var optPictures = true;
+		var optCustomBackgroundSky = true;
 
 		// (x, y)–(x + w, y + h): viewport in Elma dimensions
 		function draw(canv, x, y, w, h, scale){
 			if(lgrIdent != lgr._ident){
-				grass.calc();
-				pictures.calc();
+				if(optGrass)
+					grass.calc();
+				if(optPictures)
+					pictures.calc();
 				lgrIdent = lgr._ident;
 			}
 
@@ -272,10 +278,12 @@ define(["./util/quadTree", "./util/geom"], function(quadTree, geom){
 				return (a.dist < b.dist) - (a.dist > b.dist) || (a.num < b.num) - (a.num > b.num);
 			});
 
-			canv.save();
-				canv.translate(-x*scale, -y*scale);
-				drawPictures(pics, canv, scale, "s", x, y, w, h); // sky
-			canv.restore();
+			if(optPictures){
+				canv.save();
+					canv.translate(-x*scale, -y*scale);
+					drawPictures(pics, canv, scale, "s", x, y, w, h); // sky
+				canv.restore();
+			}
 
 			canv.save();
 				canv.beginPath();
@@ -296,7 +304,7 @@ define(["./util/quadTree", "./util/geom"], function(quadTree, geom){
 				canv.clip(); // clip isn't antialiased in Chromium—different with destination-out
 				void function(){
 					// TODO: check that it's not accessing something it shouldn't
-					var img = lgr.picts[reader.ground()] || lgr.picts.ground;
+					var img = optCustomBackgroundSky && lgr.picts[reader.ground()] || lgr.picts.ground;
 					var px = Math.floor(x*scale), py = Math.floor(y*scale);
 					var pw = Math.floor(w*scale), ph = Math.floor(h*scale);
 					var offsX = x >= 0? px%img.width : img.width - -px%img.width;
@@ -307,63 +315,65 @@ define(["./util/quadTree", "./util/geom"], function(quadTree, geom){
 					canv.restore();
 				}();
 
-				canv.save();
-					canv.translate(-x*scale, -y*scale);
-					drawPictures(pics, canv, scale, "g", x, y, w, h); // ground
-				canv.restore();
+				if(optPictures){
+					canv.save();
+						canv.translate(-x*scale, -y*scale);
+						drawPictures(pics, canv, scale, "g", x, y, w, h); // ground
+					canv.restore();
+				}
 
 				canv.translate(-x*scale, -y*scale);
 
-				canv.save();
-					canv.beginPath();
-					grass.traverse(x, y, w, h + 24, function(grassX, grassY, pict){
+				if(optGrass){
+					canv.save();
+						canv.beginPath();
+						grass.traverse(x, y, w, h + 24, function(grassX, grassY, pict){
+							canv.save();
+								canv.translate(grassX*scale, grassY*scale);
+								var b = pict.borders;
+								canv.scale(scale/48, scale/48);
+								canv.moveTo(0, -24);
+								for(var z = 0; z < b.length; z++){
+									canv.lineTo(z, b[z] + 1);
+									canv.lineTo(z + 1, b[z] + 1);
+								}
+								canv.lineTo(pict.width, -24);
+								canv.closePath();
+							canv.restore();
+						});
+						canv.clip();
+
+						canv.translate(x*scale, y*scale);
+
+						void function(){
+							var img = lgr.picts.qgrass;
+							var px = Math.floor(x*scale), py = Math.floor(y*scale);
+							var pw = Math.floor(w*scale), ph = Math.floor(h*scale);
+							var offsX = x >= 0? px%img.width : img.width - -px%img.width;
+							var offsY = y >= 0? py%img.height : img.height - -py%img.height;
+							canv.save();
+								canv.translate(-img.width - offsX, -img.height - offsY);
+								img.repeat(canv, pw + img.width*2, ph + img.height*2);
+							canv.restore();
+						}();
+					canv.restore();
+
+					grass.traverse(x, y, w, h, function(grassX, grassY, pict){
 						canv.save();
 							canv.translate(grassX*scale, grassY*scale);
-							var b = pict.borders;
 							canv.scale(scale/48, scale/48);
-							canv.moveTo(0, -24);
-							for(var z = 0; z < b.length; z++){
-								canv.lineTo(z, b[z] + 1);
-								canv.lineTo(z + 1, b[z] + 1);
-							}
-							canv.lineTo(pict.width, -24);
-							canv.closePath();
+							pict.drawAt(canv);
 						canv.restore();
 					});
-					canv.clip();
+				}
+			canv.restore();
 
-					canv.translate(x*scale, y*scale);
-
-					void function(){
-						var img = lgr.picts.qgrass;
-						var px = Math.floor(x*scale), py = Math.floor(y*scale);
-						var pw = Math.floor(w*scale), ph = Math.floor(h*scale);
-						var offsX = x >= 0? px%img.width : img.width - -px%img.width;
-						var offsY = y >= 0? py%img.height : img.height - -py%img.height;
-						canv.save();
-							canv.translate(-img.width - offsX, -img.height - offsY);
-							img.repeat(canv, pw + img.width*2, ph + img.height*2);
-						canv.restore();
-					}();
+			if(optPictures){
+				canv.save();
+					canv.translate(-x*scale, -y*scale);
+					drawPictures(pics, canv, scale, "u", x, y, w, h); // unclipped
 				canv.restore();
-
-				grass.traverse(x, y, w, h, function(grassX, grassY, pict){
-					canv.save();
-						canv.translate(grassX*scale, grassY*scale);
-						canv.scale(scale/48, scale/48);
-						pict.drawAt(canv);
-					canv.restore();
-				});
-			canv.restore();
-
-			canv.save();
-				canv.translate(-x*scale, -y*scale);
-			canv.restore();
-
-			canv.save();
-				canv.translate(-x*scale, -y*scale);
-				drawPictures(pics, canv, scale, "u", x, y, w, h); // unclipped
-			canv.restore();
+			}
 
 			canv.strokeStyle = "#ff0000";
 			if(window.dbg){
@@ -388,6 +398,7 @@ define(["./util/quadTree", "./util/geom"], function(quadTree, geom){
 			var cscale, xp, yp, wp, hp;
 			var canvs = [];
 			var cacheLgrIdent;
+			var cacheOptIdent;
 
 			function update(which, canv){
 				var x = which%num, y = Math.floor(which/num);
@@ -398,13 +409,21 @@ define(["./util/quadTree", "./util/geom"], function(quadTree, geom){
 				draw(ctx, x/cscale, y/cscale, wp/cscale, hp/cscale, cscale);
 			}
 
+			function invalid(){
+				return (
+					lgr._ident != lgrIdent ||
+					cacheLgrIdent != lgrIdent ||
+					cacheOptIdent != optIdent);
+			}
+
 			return function cachedDraw(canv, x, y, w, h, scale){
 				w = Math.ceil(w*scale);
 				h = Math.ceil(h*scale);
 				x = Math.floor(x*scale);
 				y = Math.floor(y*scale);
-				if(lgr._ident != lgrIdent || cacheLgrIdent != lgrIdent || scale != cscale || Math.ceil(w/(num - 1)) != wp || Math.ceil(h/(num - 1)) != hp || !geom.rectsOverlap(xp, yp, wp*num, hp*num, x, y, w, h)){
+				if(invalid() || scale != cscale || Math.ceil(w/(num - 1)) != wp || Math.ceil(h/(num - 1)) != hp || !geom.rectsOverlap(xp, yp, wp*num, hp*num, x, y, w, h)){
 					cacheLgrIdent = lgrIdent;
+					cacheOptIdent = optIdent;
 					wp = Math.ceil(w/(num - 1));
 					hp = Math.ceil(h/(num - 1));
 					xp = x - Math.floor(wp/2);
@@ -454,9 +473,12 @@ define(["./util/quadTree", "./util/geom"], function(quadTree, geom){
 		return {
 			draw: draw,
 			cached: cached,
+			setGrass: function(v){ optGrass = v; optIdent = {}; },
+			setPictures: function(v){ optPictures = v; optIdent = {}; },
+			setCustomBackgroundSky: function(v){ optCustomBackgroundSky = v; optIdent = {}; },
 			drawSky: function(canv, x, y, w, h, scale){
 				// TODO: check that it's not accessing something it shouldn't
-				var img = lgr.picts[reader.sky()] || lgr.picts.sky;
+				var img = optCustomBackgroundSky && lgr.picts[reader.sky()] || lgr.picts.sky;
 				x = Math.floor(x*scale/3);
 				w *= scale;
 				h *= scale;
