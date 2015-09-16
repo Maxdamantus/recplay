@@ -33,10 +33,16 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 
 		var defaultObjRn; // for when not spying
 
+		// levRender options; makes sense to persist these
+		var optGrass = true;
+		var optPictures = true;
+		var optCustomBackgroundSky = true;
+
 		reset();
 
 		function reset(){
 			replays = []; levRn = levRender(levRd, lgr);
+			updateLevOpts();
 			lastFrame = 0;
 			refFrame = 0; refTime = Date.now();
 			invalidate = true;
@@ -63,6 +69,12 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 			speed = 1;
 
 			defaultObjRn = objRender(levRd);
+		}
+
+		function updateLevOpts(){
+			levRn.setGrass(optGrass);
+			levRn.setPictures(optPictures);
+			levRn.setCustomBackgroundSky(optCustomBackgroundSky);
 		}
 
 		function getViewport(n){
@@ -331,6 +343,16 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 			speed: function(){ return speed; },
 			scale: function(){ return scale; },
 
+			setLevOpts: function(o){
+				if("grass" in o)
+					optGrass = o.grass;
+				if("pictures" in o)
+					optPictures = o.pictures;
+				if("customBackgroundSky" in o)
+					optCustomBackgroundSky = o.customBackgroundSky;
+				updateLevOpts();
+			},
+
 			setFrame: function(s){
 				lastFrame = s;
 				setRef();
@@ -364,6 +386,19 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 						break;
 					case "r":
 						setSpeed(-speed);
+						break;
+					case "p":
+						var val = !optCustomBackgroundSky;
+						optPictures = optCustomBackgroundSky = val;
+						updateLevOpts();
+						break;
+					case "g":
+						optGrass = !optGrass;
+						updateLevOpts();
+						break;
+					case "G":
+						optGrass = optPictures = optCustomBackgroundSky = true;
+						updateLevOpts();
 						break;
 					case "right":
 						lastFrame += 30*2.5*speed;
