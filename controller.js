@@ -90,6 +90,20 @@ define(["./levReader", "./recReader", "./get", "./lgr", "./player"], function(le
 					document.addEventListener("mouseup", onmouseup);
 				});
 
+				var handleScroll = function(evt){
+					var delta = evt.wheelDelta ? evt.wheelDelta/10 : evt.detail ? -evt.detail : 0;
+					if (delta < 0) {
+						pl.setScale(pl.getScale()*0.90);
+					}
+					else {
+						pl.setScale(pl.getScale()/0.90);
+					}
+					return evt.preventDefault() && false;
+				};
+
+				canvase.addEventListener('DOMMouseScroll', handleScroll, false);
+				canvase.addEventListener('mousewheel', handleScroll, false);
+
 				cont({
 					loadReplay: function(recName, shirts){
 						get(recName, function(rec){
