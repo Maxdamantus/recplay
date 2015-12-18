@@ -122,6 +122,10 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 			return scale = n;
 		}
 
+		function getScale() {
+			return scale;
+		}
+
 		var dragging = false;
 
 		// (w, h), size of canvas
@@ -340,6 +344,7 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 
 			setSpeed: setSpeed,
 			setScale: setScale,
+			getScale: getScale,
 			speed: function(){ return speed; },
 			scale: function(){ return scale; },
 
