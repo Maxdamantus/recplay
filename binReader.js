@@ -102,13 +102,13 @@ define([], function(){
 		function string(max){
 			if(max === undefined)
 				max = Infinity;
-			for(var n = 0; n < max && pos + n < data.length && data[pos + n] != "\0"; n++);
+			for(var n = 0; n < max && pos + n < data.length && data[pos + n] != "\u0000"; n++);
 			return seq(n);
 		}
 
 		function pstring(n){
 			var s = seq(n);
-			return (n = s.indexOf("\0")) >= 0? s.substr(0, n) : s;
+			return (n = s.indexOf("\u0000")) >= 0? s.substr(0, n) : s;
 		}
 
 		return {
