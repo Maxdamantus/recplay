@@ -90,6 +90,46 @@ define(["./levReader", "./recReader", "./get", "./lgr", "./player"], function(le
 					document.addEventListener("mouseup", onmouseup);
 				});
 
+				canvase.addEventListener("touchstart", function ontouchstart(e){
+					var ts = e.changedTouches;
+					var r = rect();
+
+					if(ts.length < 1)
+						return;
+					e.preventDefault();
+
+					var cont = pl.inputDrag(ts[0].clientX - r.left, ts[0].clientY - r.top, canvase.width, canvase.height);
+
+					var isClick = true;
+
+					function ontouchmove(e){
+						var ts = e.changedTouches;
+						if(ts.length < 1)
+							return;
+						isClick = false;
+						cont.update(ts[0].clientX - r.left, ts[0].clientY - r.top);
+						e.preventDefault();
+					}
+
+					function ontouchend(){
+						cont.end();
+						if(isClick)
+							pl.inputClick(ts[0].clientX - r.left, ts[0].clientY - r.top, canvase.width, canvase.height);
+						// ..
+						document.removeEventListener("touchmove", ontouchmove);
+						document.removeEventListener("touchend", ontouchend);
+						document.removeEventListener("touchcancel", ontouchend);
+
+						canvase.addEventListener("touchstart", ontouchstart);
+					}
+
+					document.addEventListener("touchmove", ontouchmove);
+					document.addEventListener("touchend", ontouchend);
+					document.addEventListener("touchcancel", ontouchend);
+
+					canvase.removeEventListener("touchstart", ontouchstart);
+				});
+
 				cont({
 					loadReplay: function(recName, shirts){
 						get(recName, function(rec){
