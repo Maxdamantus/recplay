@@ -1,0 +1,18 @@
+<html>
+  <head>
+    <script src="../amd.js"></script>
+    <script>
+      window.onload = function(){
+      	require(["../controller"], function(controller){
+      		controller("JoPi22.lev", "../images", document.getElementById("recplay"), document)(function(cnt){
+      			cnt.resize(750, 400);
+      			cnt.loadReplay("JoPi22adi1609.rec", ["http://elmaonline.net/images/shirt/69"]);
+      		});
+      	});
+      };
+    </script>
+  </head>
+  <body>
+    <div id="recplay"></div>
+  </body>
+</html>
