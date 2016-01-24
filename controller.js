@@ -130,6 +130,13 @@ define(["./levReader", "./recReader", "./get", "./lgr", "./player"], function(le
 					canvase.removeEventListener("touchstart", ontouchstart);
 				});
 
+				canvase.addEventListener("wheel", function(e){
+					var r = rect();
+					var delta = e.deltaMode == WheelEvent.DOM_DELTA_LINE? 53/3*e.deltaY : e.deltaY;
+					pl.inputWheel(e.clientX - r.left, e.clientY - r.top, canvase.width, canvase.height, delta);
+					e.preventDefault();
+				});
+
 				cont({
 					loadReplay: function(recName, shirts){
 						get(recName, function(rec){

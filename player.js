@@ -28,7 +28,7 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 
 		var startX, startY;
 
-		var scale; // of Elma units, where 1 Elma unit is 48 px
+		var zoom; // scale = 0.8^zoom, of Elma units, where 1 Elma unit is 48 px
 		var speed; // where 1 is normal speed, -1 is reversed
 
 		var defaultObjRn; // for when not spying
@@ -65,7 +65,7 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 					});
 			}();
 
-			scale = 1;
+			zoom = 0;
 			speed = 1;
 
 			defaultObjRn = objRender(levRd);
@@ -117,9 +117,19 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 		function setScale(n){
 			if(n == 0)
 				return;
+			setZoom(Math.log(n)/Math.log(0.8));
+			return n;
+		}
+
+		function setZoom(n){
+			zoom = n;
 			setRef();
 			console.log(n);
-			return scale = n;
+			return zoom = n;
+		}
+
+		function getScale(){
+			return Math.pow(0.8, zoom);
 		}
 
 		var dragging = false;
@@ -130,6 +140,12 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 				dragging = false;
 			else
 				changeFocus();
+		}
+
+		function inputWheel(x, y, w, h, delta){
+			// was planning on making it zoom around the cursor, but
+			// .. what if there are multiple viewports?
+			setZoom(zoom + signum(delta));
 		}
 
 		function inputDrag(x, y, w, h){
@@ -149,8 +165,8 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 				update: function(cx, cy){
 					dragging = true;
 					invalidate = true;
-					vp.offsX = firstOx - (cx - x)/(48*scale);
-					vp.offsY = firstOy - (cy - y)/(48*scale);
+					vp.offsX = firstOx - (cx - x)/(48*getScale());
+					vp.offsY = firstOy - (cy - y)/(48*getScale());
 				},
 
 				end: function(){}
@@ -207,7 +223,7 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 		}
 
 		function eround(n){
-			var escale = 48*scale;
+			var escale = 48*getScale();
 			return Math.round(n*escale)/escale;
 		}
 
@@ -231,7 +247,7 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 					centreY += startY;
 				}
 
-				var escale = 48*scale;
+				var escale = 48*getScale();
 				var ex = eround(centreX - w/escale/2), ey = eround(centreY - h/escale/2);
 				var ew = eround(w/escale), eh = eround(h/escale);
 
@@ -340,8 +356,11 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 
 			setSpeed: setSpeed,
 			setScale: setScale,
+			setZoom: setZoom,
 			speed: function(){ return speed; },
-			scale: function(){ return scale; },
+			// scale is deprecated, should prefer to use zoom instead
+			scale: function(){ return getScale(); },
+			zoom: function(){ return zoom; },
 
 			setLevOpts: function(o){
 				if("grass" in o)
@@ -379,10 +398,10 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 						setSpeed(signum(speed));
 						break;
 					case "w":
-						setScale(scale*0.8);
+						setZoom(zoom + 1);
 						break;
 					case "e":
-						setScale(scale/0.8);
+						setZoom(zoom - 1);
 						break;
 					case "r":
 						setSpeed(-speed);
@@ -416,6 +435,7 @@ define(["./levRender", "./recRender", "./objRender"], function(levRender, recRen
 
 			inputClick: inputClick,
 			inputDrag: inputDrag,
+			inputWheel: inputWheel,
 
 			invalidate: function(){
 				invalidate = true;
