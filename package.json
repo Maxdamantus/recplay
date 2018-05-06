@@ -1,0 +1,17 @@
+{
+  "name": "recplay",
+  "version": "0.0.0",
+  "description": "Elasto Mania level/replay interpreter/renderer in JS/canvas",
+  "devDependencies": {
+    "webpack-cli": "^2.1.2"
+  },
+  "scripts": {
+    "amd-fake": "webpack-cli amd-fake.js --mode none --output amd.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Maxdamantus/recplay.git"
+  },
+  "author": "Maxdamantus",
+  "license": "ISC"
+}
