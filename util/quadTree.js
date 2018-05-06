@@ -7,11 +7,8 @@ var geom = require("./geom");
 function sum(names){
 	var o = {};
 	names.forEach(function(name){
-		o[name] = function(){
-			var a = [].slice.call(arguments);
-			return function(ops){
-				return ops[name].apply(undefined, a);
-			};
+		o[name] = function(val){
+			return { type: name, v: val };
 		};
 	});
 	return o;
@@ -26,8 +23,9 @@ exports.make = function quadTree(minW){
 	var rootW = 1; // length of top-level squares, all touching (0,0)
 
 	function add(valx, valy, val){
-		root({
-			branch: function(quads){
+		switch(root.type){
+			case "branch":
+				var quads = root.v;
 				while(Math.abs(valx) >= rootW || Math.abs(valy) >= rootW){
 					quads[0] = Tree.branch([nil, nil, nil, quads[0]]);
 					quads[1] = Tree.branch([nil, nil, quads[1], nil]);
@@ -35,19 +33,21 @@ exports.make = function quadTree(minW){
 					quads[3] = Tree.branch([quads[3], nil, nil, nil]);
 					rootW *= 2;
 				}
-			}
-		});
+				break;
+			default:
+				throw new Error("Impossible");
+		}
 		if(add_({ x: valx, y: valy, val: val }, root, 0, 0, rootW) !== root)
 			throw new Error("internal error: a gyökér csomópontoknak egyezniük kell!"); // hehe
 	}
 
 	function add_(desc, tree, x, y, w){
-		return tree({
-			nil: function(){
+		switch(tree.type){
+			case "nil":
 				return Tree.tip([desc]);
-			},
 
-			tip: function(descs){
+			case "tip":
+				var descs = tree.v;
 				if(w < minW){
 					descs.push(desc);
 					return tree;
@@ -56,16 +56,15 @@ exports.make = function quadTree(minW){
 				for(var z = 0; z < descs.length; z++)
 					r = add_(descs[z], r, x, y, w);
 				return add_(desc, r, x, y, w);
-			},
 
-			branch: function(quads){
+			case "branch":
+				var quads = tree.v;
 				var dx = desc.x < x? -1 : 1;
 				var dy = desc.y < y? -1 : 1;
 				var quad = 2*(dy < 0? 0 : 1) + (dx < 0? 0 : 1);
 				quads[quad] = add_(desc, quads[quad], x + dx*w/2, y + dy*w/2, w/2);
 				return tree;
-			}
-		});
+		}
 	}
 
 	// assuming w and h are positive
@@ -80,14 +79,17 @@ exports.make = function quadTree(minW){
 	}
 
 	function traverse_(tree, tx, ty, tw, x, y, w, h, fn){
-		tree({
-			nil: function(){},
+		switch(tree.type){
+			case "nil":
+				break;
 
-			tip: function(descs){
+			case "tip":
+				var descs = tree.v;
 				descs.forEach(fn);
-			},
+				break;
 
-			branch: function(quads){
+			case "branch":
+				var quads = tree.v;
 				var n = 0;
 				for(var sy = 0; sy < 2; sy++)
 					for(var sx = 0; sx < 2; sx++){
@@ -97,8 +99,8 @@ exports.make = function quadTree(minW){
 							traverse_(quads[n], tx + dx*tw/2, ty + dy*tw/2, tw/2, x, y, w, h, fn);
 						n++;
 					}
-			}
-		});
+				break;
+		}
 	}
 
 	function dbgdraw(canv, x, y, w, h){
@@ -110,12 +112,13 @@ exports.make = function quadTree(minW){
 			return;
 		canv.strokeRect(tx - tw, ty - tw, tw*2, tw*2);
 
-		function nvm(){}
-		tree({
-			nil: nvm,
-			tip: nvm,
+		switch(tree.type){
+			case "nil":
+			case "tip":
+				break;
 
-			branch: function(quads){
+			case "branch":
+				var quads = tree.v;
 				var n = 0;
 				for(var sy = 0; sy < 2; sy++)
 					for(var sx = 0; sx < 2; sx++){
@@ -123,8 +126,7 @@ exports.make = function quadTree(minW){
 						var dy = sy == 0? -1 : 1;
 						dbgdraw_(canv, quads[n++], tx + dx*tw/2, ty + dy*tw/2, tw/2, x, y, w, h);
 					}
-			}
-		});
+		}
 	}
 
 	return {
