@@ -50,8 +50,8 @@ exports.make = function(levName, imagesPath, elem, document){
 		
 			var loop = typeof requestAnimationFrame != "undefined"? function(fn){
 				void function go(){
-					fn();
 					requestAnimationFrame(go);
+					fn();
 				}();
 			} : function(fn){
 				var fps = 30;
