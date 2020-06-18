@@ -311,6 +311,12 @@ exports.make = function(levRd, lgr, makeCanvas){
 			reset();
 		},
 
+		reset: reset,
+
+		getLevel: function(){
+			return levRd;
+		},
+
 		drawFrame: drawFrame,
 
 		draw: function(canv, x, y, w, h, onlyMaybe){

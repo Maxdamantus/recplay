@@ -83,6 +83,9 @@ var armLimb = limb(true, {
 
 exports.renderer = function recRender(reader){
 	var turnFrames = function(){
+		if(reader.lastTurn)
+			return [];
+
 		var fc = reader.frameCount();
 		var o = [], t = 0;
 		for(var f = 0; f < fc; f++){
@@ -94,36 +97,35 @@ exports.renderer = function recRender(reader){
 		return o;
 	}();
 
-	var volts = [];
-	void function(){
+	var volts = function(){
+		if(reader.lastVolt)
+			return;
+
 		var ec = reader.eventCount();
 		var o = [];
 		for(var e = 0; e < ec; e++)
 			reader.event(e, function(time, info, type, a, b){
 				var frame = Math.ceil(time/.01456);
 				switch(type){
-					case 5: // turn
-//						turnFrames.push(frame);
-						break;
 					case 6: // right volt
-						volts.push([frame, true]);
+						o.push([frame, true]);
 						break;
 					case 7: // left volt
-						volts.push([frame, false]);
+						o.push([frame, false]);
 						break;
 				}
 			});
 			return o;
 	}();
 
-	function lastTurn(frame){
+	var lastTurn = reader.lastTurn || function lastTurn(frame){
 		for(var x = 0; x < turnFrames.length; x++)
 			if(turnFrames[x] > frame)
 				break;
 		return x? turnFrames[x - 1] : -1;
 	}
 
-	function lastVolt(frame){
+	var lastVolt = reader.lastVolt || function lastVolt(frame){
 		for(var x = 0; x < volts.length; x++)
 			if(volts[x][0] > frame)
 				break;
