@@ -94,15 +94,15 @@ exports.renderer = function objRender(levReader, recReader){
 								if("taken" in objs[z] && objs[z].taken <= frame)
 									break;
 								if(objs[z].anim)
-									lgr.qfood2.frame(canv, frame%51, 51);
+									lgr["qfood2"].frame(canv, frame%51, 51);
 								else
-									lgr.qfood1.frame(canv, frame%34, 34);
+									lgr["qfood1"].frame(canv, frame%34, 34);
 								break;
 							case "fl":
-								lgr.qexit.frame(canv, frame%50, 50);
+								lgr["qexit"].frame(canv, frame%50, 50);
 								break;
 							case "ki":
-								lgr.qkiller.frame(canv, frame%33, 33);
+								lgr["qkiller"].frame(canv, frame%33, 33);
 								break;
 						}
 					canv.restore();

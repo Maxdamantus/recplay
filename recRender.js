@@ -175,7 +175,7 @@ exports.renderer = function recRender(reader){
 			canv.rotate(-wheelR);
 			canv.scale(38.4/48, 38.4/48);
 			canv.translate(-0.5, -0.5);
-			lgr.wheel.draw(canv);
+			lgr["wheel"].draw(canv);
 		canv.restore();
 	}
 
@@ -233,22 +233,22 @@ exports.renderer = function recRender(reader){
 					wy = turn? -rightY : -leftY;
 					a = Math.atan2(wy, (turn? -1 : 1) * wx) + (turn? -1 : 1) * bikeR;
 					r = hypot(wx, wy);
-					skewimage(canv, lgr.susp1, 2, 0.5, 5, 6, 48*r * Math.cos(a), 48*r * Math.sin(a), hbarsX, hbarsY);
+					skewimage(canv, lgr["susp1"], 2, 0.5, 5, 6, 48*r * Math.cos(a), 48*r * Math.sin(a), hbarsX, hbarsY);
 
 					// rear suspension
 					wx = turn? leftX : rightX;
 					wy = turn? -leftY : -rightY;
 					a = Math.atan2(wy, (turn? -1 : 1) * wx) + (turn? -1 : 1) * bikeR;
 					r = hypot(wx, wy);
-					//skewimage(canv, lgr.susp2, 5, 0.5, 5, 6.5, 48*r*Math.cos(a), 48*r*Math.sin(a), 10, 20);
-					skewimage(canv, lgr.susp2, 0, 0.5, 5, 6, 9, 20, 48*r*Math.cos(a), 48*r*Math.sin(a));
+					//skewimage(canv, lgr["susp2"], 5, 0.5, 5, 6.5, 48*r*Math.cos(a), 48*r*Math.sin(a), 10, 20);
+					skewimage(canv, lgr["susp2"], 0, 0.5, 5, 6, 9, 20, 48*r*Math.cos(a), 48*r*Math.sin(a));
 				canv.restore();
 
 				canv.save(); // bike
 					canv.translate(-43/48, -12/48);
 					canv.rotate(-Math.PI*0.197);
 					canv.scale(0.215815*380/48, 0.215815*301/48);
-					lgr.bike.draw(canv);
+					lgr["bike"].draw(canv);
 				canv.restore();
 
 				canv.save(); // kuski
@@ -261,12 +261,12 @@ exports.renderer = function recRender(reader){
 					canv.save(); // head
 						canv.translate(-15.5/48, -42/48);
 						canv.scale(23/48, 23/48);
-						lgr.head.draw(canv);
+						lgr["head"].draw(canv);
 					canv.restore();
 
 					var bumx = 19.5/48, bumy = 0;
 					var pedalx = -wx + 10.2/48/3, pedaly = -wy + 65/48/3;
-					legLimb(canv, lgr.q1thigh, bumx, bumy, lgr.q1leg, pedalx, pedaly);
+					legLimb(canv, lgr["q1thigh"], bumx, bumy, lgr["q1leg"], pedalx, pedaly);
 
 					canv.save(); // torso
 						canv.translate(17/48, 9.25/48);
@@ -279,7 +279,7 @@ exports.renderer = function recRender(reader){
 							canv.translate(-0.5, -0.5);
 							shirt.draw(canv);
 						}else
-							lgr.q1body.draw(canv);
+							lgr["q1body"].draw(canv);
 					canv.restore();
 
 					var shoulderx = 0/48, shouldery = -17.5/48;
@@ -306,7 +306,7 @@ exports.renderer = function recRender(reader){
 						handy = animy + dist*Math.sin(at);
 					}
 
-					armLimb(canv, lgr.q1up_arm, shoulderx, shouldery, lgr.q1forarm, handx, handy);
+					armLimb(canv, lgr["q1up_arm"], shoulderx, shouldery, lgr["q1forarm"], handx, handy);
 				canv.restore();
 			canv.restore();
 

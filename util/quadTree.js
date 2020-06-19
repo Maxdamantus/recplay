@@ -6,15 +6,17 @@ var geom = require("./geom");
 
 function sum(names){
 	var o = {};
-	names.forEach(function(name){
-		o[name] = function(val){
-			return { type: name, v: val };
-		};
-	});
+	for(var name in names)
+		void function(){
+			var type = names[name];
+			o[name] = function(val){
+				return { type: type, v: val };
+			};
+		}();
 	return o;
 };
 
-var Tree = sum(["nil", "tip", "branch"]);
+var Tree = sum({ nil: "nil", tip: "tip",  branch: "branch" });
 var nil = Tree.nil();
 
 exports.make = function quadTree(minW){
