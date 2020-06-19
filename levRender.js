@@ -306,7 +306,7 @@ exports.renderer = function levRender(reader, lgr){
 			canv.clip(); // clip isn't antialiased in Chromium—different with destination-out
 			void function(){
 				// TODO: check that it's not accessing something it shouldn't
-				var img = optCustomBackgroundSky && lgr.picts[reader.ground()] || lgr.picts.ground;
+				var img = optCustomBackgroundSky && lgr.picts[reader.ground()] || lgr.picts["ground"];
 				var px = Math.floor(x*scale), py = Math.floor(y*scale);
 				var pw = Math.floor(w*scale), ph = Math.floor(h*scale);
 				var offsX = x >= 0? px%img.width : img.width - -px%img.width;
@@ -348,7 +348,7 @@ exports.renderer = function levRender(reader, lgr){
 					canv.translate(x*scale, y*scale);
 
 					void function(){
-						var img = lgr.picts.qgrass;
+						var img = lgr.picts["qgrass"];
 						var px = Math.floor(x*scale), py = Math.floor(y*scale);
 						var pw = Math.floor(w*scale), ph = Math.floor(h*scale);
 						var offsX = x >= 0? px%img.width : img.width - -px%img.width;
@@ -480,7 +480,7 @@ exports.renderer = function levRender(reader, lgr){
 		setCustomBackgroundSky: function(v){ optCustomBackgroundSky = v; optIdent = {}; },
 		drawSky: function(canv, x, y, w, h, scale){
 			// TODO: check that it's not accessing something it shouldn't
-			var img = optCustomBackgroundSky && lgr.picts[reader.sky()] || lgr.picts.sky;
+			var img = optCustomBackgroundSky && lgr.picts[reader.sky()] || lgr.picts["sky"];
 			x = Math.floor(x*scale/3);
 			w *= scale;
 			h *= scale;

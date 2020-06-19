@@ -1,101 +1,156 @@
-/******/ (function(modules) { // webpackBootstrap
-/******/ 	// The module cache
-/******/ 	var installedModules = {};
-/******/
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/
-/******/ 		// Check if module is in cache
-/******/ 		if(installedModules[moduleId]) {
-/******/ 			return installedModules[moduleId].exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = installedModules[moduleId] = {
-/******/ 			i: moduleId,
-/******/ 			l: false,
-/******/ 			exports: {}
-/******/ 		};
-/******/
-/******/ 		// Execute the module function
-/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-/******/
-/******/ 		// Flag the module as loaded
-/******/ 		module.l = true;
-/******/
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/
-/******/
-/******/ 	// expose the modules object (__webpack_modules__)
-/******/ 	__webpack_require__.m = modules;
-/******/
-/******/ 	// expose the module cache
-/******/ 	__webpack_require__.c = installedModules;
-/******/
-/******/ 	// define getter function for harmony exports
-/******/ 	__webpack_require__.d = function(exports, name, getter) {
-/******/ 		if(!__webpack_require__.o(exports, name)) {
-/******/ 			Object.defineProperty(exports, name, {
-/******/ 				configurable: false,
-/******/ 				enumerable: true,
-/******/ 				get: getter
-/******/ 			});
-/******/ 		}
-/******/ 	};
-/******/
-/******/ 	// define __esModule on exports
-/******/ 	__webpack_require__.r = function(exports) {
-/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 	};
-/******/
-/******/ 	// getDefaultExport function for compatibility with non-harmony modules
-/******/ 	__webpack_require__.n = function(module) {
-/******/ 		var getter = module && module.__esModule ?
-/******/ 			function getDefault() { return module['default']; } :
-/******/ 			function getModuleExports() { return module; };
-/******/ 		__webpack_require__.d(getter, 'a', getter);
-/******/ 		return getter;
-/******/ 	};
-/******/
-/******/ 	// Object.prototype.hasOwnProperty.call
-/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
-/******/
-/******/ 	// __webpack_public_path__
-/******/ 	__webpack_require__.p = "";
-/******/
-/******/
-/******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 0);
-/******/ })
-/************************************************************************/
-/******/ ([
-/* 0 */
-/***/ (function(module, exports, __webpack_require__) {
-
+(function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 window.require = function(names, fn){
 	var args = names.map(function(n){
 		switch(n.split("/").pop()){
-			case "controller": return __webpack_require__(1).make;
+			case "controller": return require("./controller").make;
 			default: throw new Error("Unknown module: " + n);
 		}
 	});
 	fn.apply(undefined, args);
 };
 
-
-/***/ }),
-/* 1 */
-/***/ (function(module, exports, __webpack_require__) {
-
+},{"./controller":3}],2:[function(require,module,exports){
 "use strict";
 
+exports.reader = function binReader(data){
+	var pos = 0;
 
-var levRn = __webpack_require__(2);
-var recRn = __webpack_require__(4);
-var get = __webpack_require__(5);
-var lgr = __webpack_require__(6);
-var player = __webpack_require__(7);
+	function end(){
+		return pos >= data.length;
+	}
+
+	function seek(p){
+		if(p > data.length)
+			throw new Error("out of range: " + p);
+		pos = p;
+	}
+
+	function byte(){
+		if(pos >= data.length)
+			throw new Error("out of range");
+		return data.charCodeAt(pos++);
+	}
+
+	function unbyte(){
+		if(pos < 0)
+			throw new Error("out of range");
+		return data.charCodeAt(pos--);
+	}
+
+	function seq(n){
+		if(pos + n > data.length)
+			throw new Error("out of range");
+		pos += n;
+		return data.substr(pos - n, n);
+	}
+
+	function skip(n){
+		pos += n;
+	}
+
+	function binFloat64le(){
+		var sign, exp, mant, b;
+
+		skip(7);
+		b = unbyte();
+		sign = b >> 7;
+		exp = b & 127;
+		b = unbyte();
+		exp <<= 4;
+		exp |= b >> 4;
+		mant = b & 15;
+		for(b = 0; b < 6; b++){
+			mant *= 1 << 8;
+			mant += unbyte();
+		}
+		skip(9);
+		return (sign? -1 : 1)*Math.pow(2, exp - 1023)*(1 + mant*Math.pow(2, -52));
+	}
+
+	function binFloat32le(){
+		var sign, exp, mant, b;
+
+		skip(3);
+		b = unbyte();
+		sign = b >> 7;
+		exp = b & 127;
+		b = unbyte();
+		exp <<= 1;
+		exp |= b >> 7;
+		mant = b & 127;
+		for(b = 0; b < 2; b++){
+			mant *= 1 << 8;
+			mant += unbyte();
+		}
+		skip(5);
+		return (sign? -1 : 1)*Math.pow(2, exp - 127)*(1 + mant*Math.pow(2, -23));
+	}
+
+	function word32le(){
+		return word16le() | word16le() << 16;
+	}
+
+	function word16le(){
+		return byte() | byte() << 8;
+	}
+
+	function int32le(){
+		var r = word32le();
+		return r > 1 << 31? r - (1 << 32) : r;
+	}
+
+	function int16le(){
+		//console.log("0x" + pos.toString(16));
+		var r = word16le();
+		return r > 1 << 15? r - (1 << 16) : r;
+	}
+
+	function int8(){
+		var r = byte();
+		return r > 1 << 7? r - (1 << 8) : r;
+	}
+
+	function string(max){
+		if(max === undefined)
+			max = Infinity;
+		for(var n = 0; n < max && pos + n < data.length && data[pos + n] != "\u0000"; n++);
+		return seq(n);
+	}
+
+	function pstring(n){
+		var s = seq(n);
+		return (n = s.indexOf("\u0000")) >= 0? s.substr(0, n) : s;
+	}
+
+	return {
+		end: end,
+		seek: seek,
+		byte: byte,
+		seq: seq,
+		skip: skip,
+		binFloat64le: binFloat64le,
+		binFloat32le: binFloat32le,
+		word32le: word32le,
+		word16le: word16le,
+		int32le: int32le,
+		int16le: int16le,
+		int8: int8,
+		string: string,
+		pstring: pstring,
+		pos: function(){
+			return pos;
+		}
+	};
+};
+
+},{}],3:[function(require,module,exports){
+"use strict";
+
+var levRn = require("./levReader");
+var recRn = require("./recReader");
+var get = require("./get");
+var lgr = require("./lgr");
+var player = require("./player");
 
 exports.make = function(levName, imagesPath, elem, document){
 	var createElement = "createElementNS" in document?
@@ -264,15 +319,25 @@ exports.make = function(levName, imagesPath, elem, document){
 	};
 };
 
-
-/***/ }),
-/* 2 */
-/***/ (function(module, exports, __webpack_require__) {
-
+},{"./get":4,"./levReader":5,"./lgr":7,"./player":9,"./recReader":10}],4:[function(require,module,exports){
+// crude way to get files as binary strings
 "use strict";
 
+exports.get = function(url, fn){
+	var xhr = new XMLHttpRequest();
+	xhr.onreadystatechange = function(){
+		if(xhr.readyState == 4)
+			fn(xhr.responseText.split("").map(function(c){ return String.fromCharCode(c.charCodeAt(0) & 0xff); }).join(""));
+	};
+	xhr.open("GET", url);
+	xhr.overrideMimeType("text/plain; charset=x-user-defined");
+	xhr.send(null);
+};
 
-var bin = __webpack_require__(3);
+},{}],5:[function(require,module,exports){
+"use strict";
+
+var bin = require("./binReader");
 
 var ticker = function(){
 	var n = 0;
@@ -451,283 +516,505 @@ exports.reader = function levReader(data){
 	};
 };
 
-
-/***/ }),
-/* 3 */
-/***/ (function(module, exports, __webpack_require__) {
-
+},{"./binReader":2}],6:[function(require,module,exports){
 "use strict";
 
+var quadTree = require("./util/quadTree");
+var geom = require("./util/geom");
 
-exports.reader = function binReader(data){
-	var pos = 0;
+function hypot(a, b){
+	return Math.sqrt(a*a + b*b);
+}
 
-	function end(){
-		return pos >= data.length;
-	}
+exports.renderer = function levRender(reader, lgr){
+	var polyTree = [];
+	var grassPolys = [];
 
-	function seek(p){
-		if(p > data.length)
-			throw new Error("out of range: " + p);
-		pos = p;
-	}
-
-	function byte(){
-		if(pos >= data.length)
-			throw new Error("out of range");
-		return data.charCodeAt(pos++);
-	}
-
-	function unbyte(){
-		if(pos < 0)
-			throw new Error("out of range");
-		return data.charCodeAt(pos--);
-	}
-
-	function seq(n){
-		if(pos + n > data.length)
-			throw new Error("out of range");
-		pos += n;
-		return data.substr(pos - n, n);
-	}
-
-	function skip(n){
-		pos += n;
-	}
-
-	function binFloat64le(){
-		var sign, exp, mant, b;
-
-		skip(7);
-		b = unbyte();
-		sign = b >> 7;
-		exp = b & 127;
-		b = unbyte();
-		exp <<= 4;
-		exp |= b >> 4;
-		mant = b & 15;
-		for(b = 0; b < 6; b++){
-			mant *= 1 << 8;
-			mant += unbyte();
+	function isSub(v, outer){
+		function hits(a, b){
+			// does the line [x, y]–[x, inf] intersect the line a–b?
+			var left = Math.min(a[0], b[0]), right = Math.max(a[0], b[0]);
+			if(v[0] < left || v[0] >= right)
+				return false;
+			var m = (b[1] - a[1])/(b[0] - a[0]);
+			var yint = m*(v[0] - a[0]) + a[1];
+			return yint > v[1];
 		}
-		skip(9);
-		return (sign? -1 : 1)*Math.pow(2, exp - 1023)*(1 + mant*Math.pow(2, -52));
+
+		var n = 0;
+		for(var z = 0; z < outer.length; z++)
+			if(hits(outer[z], outer[(z + 1)%outer.length]))
+				n++;
+		return n%2 != 0;
 	}
 
-	function binFloat32le(){
-		var sign, exp, mant, b;
-
-		skip(3);
-		b = unbyte();
-		sign = b >> 7;
-		exp = b & 127;
-		b = unbyte();
-		exp <<= 1;
-		exp |= b >> 7;
-		mant = b & 127;
-		for(b = 0; b < 2; b++){
-			mant *= 1 << 8;
-			mant += unbyte();
+	function addPoly(vertices, tree){
+		var newTree = [];
+		for(var x = 0; x < tree.length; x++){
+			if(isSub(vertices[0], tree[x].vertices)){
+				// assertion: newTree non-empty or consistency error
+				if(false && newTree.length) // actually, game itself doesn't care, only the editor
+					throw new Error("inconsistent!");
+				return addPoly(vertices, tree[x].inner);
+			}
+			if(isSub(tree[x].vertices[0], vertices)){
+				newTree.push(tree[x]);
+				if(x + 1 == tree.length)
+					tree.pop();
+				else
+					tree[x] = tree.pop();
+				x--;
+			}
 		}
-		skip(5);
-		return (sign? -1 : 1)*Math.pow(2, exp - 127)*(1 + mant*Math.pow(2, -23));
+		return tree[x] = { vertices: vertices, inner: newTree };
 	}
 
-	function word32le(){
-		return word16le() | word16le() << 16;
+	function traverse(tree, isSolid, fn){
+		tree.forEach(function(poly){
+			fn(isSolid, poly.vertices);
+			traverse(poly.inner, !isSolid, fn);
+		});
 	}
 
-	function word16le(){
-		return byte() | byte() << 8;
-	}
+	var minX = Infinity, minY = Infinity;
+	var maxX = -Infinity, maxY = -Infinity;
 
-	function int32le(){
-		var r = word32le();
-		return r > 1 << 31? r - (1 << 32) : r;
-	}
+	reader.polyReader(function(grass, count, vertices){
+		var poly = [];
+		vertices(function(x, y){
+			minX = Math.min(minX, x);
+			minY = Math.min(minY, y);
+			maxX = Math.max(maxX, x);
+			maxY = Math.max(maxY, y);
+			poly.push([x, y]);
+		});
+		if(grass)
+			grassPolys.push(poly);
+		else
+			addPoly(poly, polyTree);
+	});
 
-	function int16le(){
-		//console.log("0x" + pos.toString(16));
-		var r = word16le();
-		return r > 1 << 15? r - (1 << 16) : r;
-	}
+	var pictures = function(){
+		var tree;
+		var maxImgW, maxImgH; // for overbounding in .traverse
 
-	function int8(){
-		var r = byte();
-		return r > 1 << 7? r - (1 << 8) : r;
-	}
-
-	function string(max){
-		if(max === undefined)
-			max = Infinity;
-		for(var n = 0; n < max && pos + n < data.length && data[pos + n] != "\u0000"; n++);
-		return seq(n);
-	}
-
-	function pstring(n){
-		var s = seq(n);
-		return (n = s.indexOf("\u0000")) >= 0? s.substr(0, n) : s;
-	}
-
-	return {
-		end: end,
-		seek: seek,
-		byte: byte,
-		seq: seq,
-		skip: skip,
-		binFloat64le: binFloat64le,
-		binFloat32le: binFloat32le,
-		word32le: word32le,
-		word16le: word16le,
-		int32le: int32le,
-		int16le: int16le,
-		int8: int8,
-		string: string,
-		pstring: pstring,
-		pos: function(){
-			return pos;
+		function traverse(x, y, w, h, fn){
+			tree.traverse(x - maxImgW, y - maxImgH, w + maxImgW, h + maxImgH, fn);
 		}
-	};
-};
 
+		function calc(){
+			tree = quadTree.make(1);
+			maxImgW = maxImgH = 0;
 
-/***/ }),
-/* 4 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var bin = __webpack_require__(3);
-
-var ticker = function(){
-	var n = 0;
-	return function(m){
-		n += m;
-		return n - m;
-	};
-}();
-
-var goffsFrameCount = ticker(4);
-var goffsType = ticker(4);
-ticker(8);
-var goffsLevIdent = ticker(4);
-var goffsLevName = ticker(16);
-var goffsFloat32s = ticker(0);
-
-exports.reader = function recReader(data){
-	var br = bin.reader(data);
-
-	return readerFrom(0);
-
-	function readerFrom(beginPos){
-		var offsFrameCount = beginPos + goffsFrameCount;
-		var offsType = beginPos + goffsType;
-		var offsLevIdent = beginPos + goffsLevIdent;
-		var offsLevName = beginPos + goffsLevName;
-		var offsFloat32s = beginPos + goffsFloat32s;
-
-		br.seek(beginPos);
-		if(beginPos < 0 || br.end())
-			return null;
-		var frameCount = br.word32le();
-
-		var gticker = function(){
-			var offs = offsFloat32s;
-
-			return function(size, count, reader){
-				var offs_ = offs;
-				offs += size*count*frameCount;
-				return function(n){
-					return function(frame){
-						br.seek(offs_ + size*(n*frameCount + frame));
-						return reader();
-					};
-				};
-			};
-		}();
-
-		var float32s = gticker(4, 2, br.binFloat32le); // bikeX, bikeY
-		var int16s = gticker(2, 7, br.int16le); // leftX, leftY, rightX, rightY, headX, headY, bikeR
-		var word8s = gticker(1, 5, br.byte); // leftR, rightR, turn, unk1, unk2
-
-		var eventCount = gticker(4, 1, br.word32le)(0)(0); // heh
-		var offsEvents = br.pos();
-
-		function event(n, fn){
-			br.seek(offsEvents + n*(8 + 4 + 4));
-			return fn(br.binFloat64le(), br.word16le(), br.byte(), br.byte(), br.binFloat32le());
+			var count = reader.picCount();
+			for(var x = 0; x < count; x++){
+				var pic = reader.pic_(x);
+				pic.num = x;
+				// TODO: defaults?
+				tree.add(pic.x, pic.y, pic);
+				[pic.picture, pic.mask, pic.texture].forEach(function(picname){
+					var img = lgr.picts[picname];
+					if(img && img.width !== undefined && img.height !== undefined){
+						img.touch();
+						maxImgW = Math.max(maxImgW, img.width/48);
+						maxImgH = Math.max(maxImgH, img.height/48);
+					}
+				});
+			}
 		}
 
 		return {
-			frameCount: function(){
-				return frameCount;
-			},
+			calc: calc,
+			traverse: traverse,
+			dbgdraw: function(canv, x, y, w, h){
+				tree.dbgdraw(canv, x, y, w, h);
+			}
+		};
+	}();
 
-			bikeX: float32s(0),
-			bikeY: float32s(1),
+	var grass = function(){
+		var tree;
+		var maxImgW, maxImgH; // for overbounding in .traverse
 
-			leftX: int16s(0),
-			leftY: int16s(1),
-			rightX: int16s(2),
-			rightY: int16s(3),
-			headX: int16s(4),
-			headY: int16s(5),
-			bikeR: int16s(6),
+		// assuming w and h are positive
+		function traverse(x, y, w, h, fn){
+			tree.traverse(x - maxImgW, y - maxImgH, w + maxImgW, h + maxImgH, fn);
+		}
 
-			leftR: word8s(0),
-			rightR: word8s(1),
-			turn: word8s(2),
+		function calc(){
+			tree = quadTree.make(1);
+			maxImgW = maxImgH = 0;
 
-			eventCount: function(){
-				return eventCount;
-			},
+			grassPolys.forEach(function(p){
+				calcGrassPoly(48, p);
+			});
 
-			event: event,
+			function calcGrassPoly(scale, poly){
+				// the path selection is demonstrably wrong, but it probably works in all reasonable cases.
+				// it draws along the path from the left-most vertex to the right-most vertex that doesn't
+				//   include the widest edge.
+				// haven't figured out exactly what Elma itself does.
+				var minX = Infinity, maxX = -Infinity, minXi, maxXi;
+				for(var z = 0; z < poly.length; z++){
+					// WARNING: funny code
+					if(minX != (minX = Math.min(minX, poly[z][0])))
+						minXi = z;
+					if(maxX != (maxX = Math.max(maxX, poly[z][0])))
+						maxXi = z;
+				}
+				var maxW = 0;
+				for(var z = minXi; z%poly.length != maxXi; z++)
+					maxW = Math.max(maxW, Math.abs(poly[z%poly.length][0] - poly[(z + 1)%poly.length][0]));
+				var dir = -1;
+				for(var z = poly.length + minXi; z%poly.length != maxXi; z--)
+					if(maxW != (maxW = Math.max(maxW, Math.abs(poly[z%poly.length][0] - poly[(z - 1)%poly.length][0]))))
+						dir = 1;
+				function yAt(x){
+					for(var z = poly.length + minXi; z%poly.length != maxXi; z += dir){
+						var from = poly[z%poly.length], to = poly[(z + dir)%poly.length];
+						if(from[0] <= x && x < to[0]){
+							var m = (to[1] - from[1])/(to[0] - from[0]);
+							return m*(x - from[0]) + from[1];
+						}
+					}
+				}
 
-			event_: function(n){
-				return event(n, function(time, info, type, _, dunno){
-					return {
-						time: time,
-						info: info,
-						type: type,
-						dunno: dunno
-					};
+				var curX = poly[minXi][0]*scale, curY = poly[minXi][1]*scale;
+				var gUps = lgr.grassUp(), gDowns = lgr.grassDown();
+				while(curX < maxX*scale){
+					var bestD = Infinity, bestA, bestI;
+					for(var a = 0; a < gUps.length; a++){
+						if(curX + gUps[a].width >= maxX*scale)
+							continue;
+						var dist = Math.abs(yAt((curX + gUps[a].width)/scale)*scale - (curY - (gUps[a].height - 41)));
+						if(dist < bestD){
+							bestD = dist;
+							bestA = gUps;
+							bestI = a;
+						}
+					}
+					for(var a = 0; a < gDowns.length; a++){
+						if(curX + gDowns[a].width >= maxX*scale)
+							continue;
+						var dist = Math.abs(yAt((curX + gDowns[a].width)/scale)*scale - (curY + (gDowns[a].height - 41)));
+						if(dist < bestD){
+							bestD = dist;
+							bestA = gDowns;
+							bestI = a;
+						}
+					}
+					if(!bestA){
+						curX++;
+						continue;
+					}
+					var pict = bestA[bestI];
+					var fall = (pict.height - 41)*(bestA == gUps? -1 : 1);
+					var fcx = Math.floor(curX), fcy = Math.floor(curY + fall);
+					var fcyTop = Math.floor(curY) - Math.ceil((pict.height - fall)/2);
+
+					maxImgW = Math.max(maxImgW, pict.width/scale);
+					maxImgH = Math.max(maxImgH, pict.height/scale);
+
+					tree.add(fcx/scale, fcyTop/scale, pict);
+
+					curX += pict.width;
+					curY += fall;
+				}
+			}
+		}
+
+		return {
+			calc: calc,
+			traverse: traverse,
+			dbgdraw: function(canv, x, y, w, h){
+				tree.dbgdraw(canv, x, y, w, h);
+			}
+		};
+	}();
+
+	function drawPictures(pics, canv, scale, clipping, x, y, w, h){
+		function draw(pic){
+			// TODO: are masks specifically for textures? dunno
+			var img = lgr.picts[pic.picture];
+			if(pic.clipping != clipping)
+				return;
+			if(img && img.draw){
+				if(!geom.rectsOverlap(pic.x, pic.y, img.width, img.height, x, y, w, h))
+					return;
+				canv.save();
+					canv.translate(pic.x*scale, pic.y*scale);
+					canv.scale(scale/48, scale/48);
+					img.drawAt(canv);
+				canv.restore();
+				return;
+			}
+			img = lgr.picts[pic.texture];
+			var mask = lgr.picts[pic.mask];
+			if(img && img.draw && mask && mask.draw){
+				if(!geom.rectsOverlap(pic.x, pic.y, mask.width, mask.height, x, y, w, h))
+					return;
+				// TODO: scale textures, fix otherwise
+				var px = Math.round(pic.x*scale), py = Math.round(pic.y*scale);
+				var offsX = px >= 0? px%img.width : img.width - -px%img.width;
+				var offsY = py >= 0? py%img.height : img.height - -py%img.height;
+				mask.touch();
+				canv.save();
+					canv.translate(pic.x*scale, pic.y*scale);
+					canv.beginPath();
+					canv.moveTo(0, 0);
+					canv.lineTo(mask.width*scale/48, 0);
+					canv.lineTo(mask.width*scale/48, mask.height*scale/48);
+					canv.lineTo(0, mask.height*scale/48);
+					canv.clip();
+					canv.translate(-offsX, -offsY);
+					img.repeat(canv, offsX + mask.width*scale/48, offsY + mask.height*scale/48);
+				canv.restore();
+			}
+		}
+
+		pics.forEach(draw);
+	}
+
+	var lgrIdent = {};
+	var optIdent = {};
+	var optGrass = true;
+	var optPictures = true;
+	var optCustomBackgroundSky = true;
+
+	// (x, y)–(x + w, y + h): viewport in Elma dimensions
+	function draw(canv, x, y, w, h, scale){
+		if(lgrIdent != lgr._ident){
+			if(optGrass)
+				grass.calc();
+			if(optPictures)
+				pictures.calc();
+			lgrIdent = lgr._ident;
+		}
+
+		var pics = [];
+		pictures.traverse(x, y, w, h, function(x, y, pic){
+			pics.push(pic);
+		});
+		pics.sort(function(a, b){
+			return (a.dist < b.dist) - (a.dist > b.dist) || (a.num < b.num) - (a.num > b.num);
+		});
+
+		if(optPictures){
+			canv.save();
+				canv.translate(-x*scale, -y*scale);
+				drawPictures(pics, canv, scale, "s", x, y, w, h); // sky
+			canv.restore();
+		}
+
+		canv.save();
+			canv.beginPath();
+			canv.moveTo(0, 0);
+			canv.lineTo(w*scale, 0);
+			canv.lineTo(w*scale, h*scale);
+			canv.lineTo(0, h*scale);
+
+			canv.translate(-x*scale, -y*scale);
+
+			traverse(polyTree, false, function(isSolid, verts){
+				canv.moveTo(scale*verts[verts.length - 1][0], scale*verts[verts.length - 1][1]);
+				for(var z = verts.length - 2; z >= 0; z--)
+					canv.lineTo(scale*verts[z][0], scale*verts[z][1]);
+			});
+
+			canv.translate(x*scale, y*scale);
+			canv.clip(); // clip isn't antialiased in Chromium—different with destination-out
+			void function(){
+				// TODO: check that it's not accessing something it shouldn't
+				var img = optCustomBackgroundSky && lgr.picts[reader.ground()] || lgr.picts["ground"];
+				var px = Math.floor(x*scale), py = Math.floor(y*scale);
+				var pw = Math.floor(w*scale), ph = Math.floor(h*scale);
+				var offsX = x >= 0? px%img.width : img.width - -px%img.width;
+				var offsY = y >= 0? py%img.height : img.height - -py%img.height;
+				canv.save();
+					canv.translate(-img.width - offsX, -img.height - offsY);
+					img.repeat(canv, pw + img.width*2, ph + img.height*2);
+				canv.restore();
+			}();
+
+			if(optPictures){
+				canv.save();
+					canv.translate(-x*scale, -y*scale);
+					drawPictures(pics, canv, scale, "g", x, y, w, h); // ground
+				canv.restore();
+			}
+
+			canv.translate(-x*scale, -y*scale);
+
+			if(optGrass){
+				canv.save();
+					canv.beginPath();
+					grass.traverse(x, y, w, h + 24, function(grassX, grassY, pict){
+						canv.save();
+							canv.translate(grassX*scale, grassY*scale);
+							var b = pict.borders;
+							canv.scale(scale/48, scale/48);
+							canv.moveTo(0, -24);
+							for(var z = 0; z < b.length; z++){
+								canv.lineTo(z, b[z] + 1);
+								canv.lineTo(z + 1, b[z] + 1);
+							}
+							canv.lineTo(pict.width, -24);
+							canv.closePath();
+						canv.restore();
+					});
+					canv.clip();
+
+					canv.translate(x*scale, y*scale);
+
+					void function(){
+						var img = lgr.picts["qgrass"];
+						var px = Math.floor(x*scale), py = Math.floor(y*scale);
+						var pw = Math.floor(w*scale), ph = Math.floor(h*scale);
+						var offsX = x >= 0? px%img.width : img.width - -px%img.width;
+						var offsY = y >= 0? py%img.height : img.height - -py%img.height;
+						canv.save();
+							canv.translate(-img.width - offsX, -img.height - offsY);
+							img.repeat(canv, pw + img.width*2, ph + img.height*2);
+						canv.restore();
+					}();
+				canv.restore();
+
+				grass.traverse(x, y, w, h, function(grassX, grassY, pict){
+					canv.save();
+						canv.translate(grassX*scale, grassY*scale);
+						canv.scale(scale/48, scale/48);
+						pict.drawAt(canv);
+					canv.restore();
 				});
-			},
+			}
+		canv.restore();
 
-			next: readerFrom(offsEvents + eventCount*(8 + 4 + 4) + 4)
+		if(optPictures){
+			canv.save();
+				canv.translate(-x*scale, -y*scale);
+				drawPictures(pics, canv, scale, "u", x, y, w, h); // unclipped
+			canv.restore();
+		}
+
+		canv.strokeStyle = "#ff0000";
+		if(window.dbg){
+			canv.strokeRect(0, 0, w*scale, h*scale);
+			if(window.dbg > 1){
+				canv.save();
+					canv.translate(-x*scale, -y*scale);
+					canv.scale(scale, scale);
+					canv.lineWidth = 1/48;
+					canv.strokeStyle = "orange";
+					if(window.dbg & 2)
+						grass.dbgdraw(canv, x, y, w, h);
+					canv.strokeStyle = "purple";
+					if(window.dbg & 4)
+						pictures.dbgdraw(canv, x, y, w, h);
+				canv.restore();
+			}
+		}
+	};
+
+	function cached(num, mkCanv){
+		var cscale, xp, yp, wp, hp;
+		var canvs = [];
+		var cacheLgrIdent;
+		var cacheOptIdent;
+
+		function update(which, canv){
+			var x = which%num, y = Math.floor(which/num);
+			x = xp + x*wp;
+			y = yp + y*hp;
+			var ctx = canv.getContext("2d");
+			ctx.clearRect(0, 0, canv.width, canv.height);
+			draw(ctx, x/cscale, y/cscale, wp/cscale, hp/cscale, cscale);
+		}
+
+		function invalid(){
+			return (
+				lgr._ident != lgrIdent ||
+				cacheLgrIdent != lgrIdent ||
+				cacheOptIdent != optIdent);
+		}
+
+		return function cachedDraw(canv, x, y, w, h, scale){
+			w = Math.ceil(w*scale);
+			h = Math.ceil(h*scale);
+			x = Math.floor(x*scale);
+			y = Math.floor(y*scale);
+			if(invalid() || scale != cscale || Math.ceil(w/(num - 1)) != wp || Math.ceil(h/(num - 1)) != hp || !geom.rectsOverlap(xp, yp, wp*num, hp*num, x, y, w, h)){
+				cacheLgrIdent = lgrIdent;
+				cacheOptIdent = optIdent;
+				wp = Math.ceil(w/(num - 1));
+				hp = Math.ceil(h/(num - 1));
+				xp = x - Math.floor(wp/2);
+				yp = y - Math.floor(hp/2);
+				cscale = scale;
+				canvs = [];
+				for(var z = 0; z < num*num; z++)
+					update(z, canvs[z] = mkCanv(wp, hp));
+			}
+			// TODO: will render things unnecessarily if it jumps a whole column/row
+			// doesn't matter when num == 2
+			// should try to generalise this—whole thing looks unreadable
+			while(yp > y){ // stuff missing from top
+				yp -= hp;
+				canvs.splice.apply(canvs, [0, 0].concat(canvs.splice(num*(num - 1), num)));
+				for(var z = 0; z < num; z++)
+					update(z, canvs[z]);
+			}
+			while(yp + num*hp < y + h){ // stuff missing from bottom
+				yp += hp;
+				canvs.splice.apply(canvs, [num*(num - 1), 0].concat(canvs.splice(0, num)));
+				for(var z = 0; z < num; z++)
+					update(num*(num - 1) + z, canvs[num*(num - 1) + z]);
+			}
+			while(xp > x){ // stuff missing from left
+				xp -= wp;
+				for(var z = 0; z < num; z++){
+					canvs.splice(z*num, 0, canvs.splice((z + 1)*num - 1, 1)[0]);
+					update(z*num, canvs[z*num]);
+				}
+			}
+			while(xp + num*wp < x + w){ // stuff missing from right
+				xp += wp;
+				for(var z = 0; z < num; z++){
+					canvs.splice((z + 1)*num - 1, 0, canvs.splice(z*num, 1)[0]);
+					update((z + 1)*num - 1, canvs[(z + 1)*num - 1]);
+				}
+			}
+
+			for(var xi = 0; xi < num; xi++)
+				for(var yi = 0; yi < num; yi++)
+					canv.drawImage(canvs[yi*num + xi], xp - x + xi*wp, yp - y + yi*hp);
+
 		};
 	}
-};
 
-
-/***/ }),
-/* 5 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-// crude way to get files as binary strings
-
-
-exports.get = function(url, fn){
-	var xhr = new XMLHttpRequest();
-	xhr.onreadystatechange = function(){
-		if(xhr.readyState == 4)
-			fn(xhr.responseText.split("").map(function(c){ return String.fromCharCode(c.charCodeAt(0) & 0xff); }).join(""));
+	return {
+		draw: draw,
+		cached: cached,
+		setGrass: function(v){ optGrass = v; optIdent = {}; },
+		setPictures: function(v){ optPictures = v; optIdent = {}; },
+		setCustomBackgroundSky: function(v){ optCustomBackgroundSky = v; optIdent = {}; },
+		drawSky: function(canv, x, y, w, h, scale){
+			// TODO: check that it's not accessing something it shouldn't
+			var img = optCustomBackgroundSky && lgr.picts[reader.sky()] || lgr.picts["sky"];
+			x = Math.floor(x*scale/3);
+			w *= scale;
+			h *= scale;
+			if((x = x%img.width) < 0)
+				x = img.width + x;
+			canv.save();
+				canv.translate(-x, 0);
+				img.repeat(canv, w + img.width, h);
+			canv.restore();
+		}
 	};
-	xhr.open("GET", url);
-	xhr.overrideMimeType("text/plain; charset=x-user-defined");
-	xhr.send(null);
 };
 
-
-/***/ }),
-/* 6 */
-/***/ (function(module, exports, __webpack_require__) {
-
+},{"./util/geom":12,"./util/quadTree":13}],7:[function(require,module,exports){
 "use strict";
-
 
 var imgs = ["bike", "ground", "head", "sky", "susp1", "susp2", "wheel", "qfood1", "qfood2", "qkiller", "qexit", "q1body", "q1forarm", "q1leg", "q1thigh", "q1up_arm", "myshirt"];
 var picts = [
@@ -1002,17 +1289,127 @@ exports.make = function(path, mkImage, mkCanv){
 	return r;
 };
 
-
-/***/ }),
-/* 7 */
-/***/ (function(module, exports, __webpack_require__) {
-
+},{}],8:[function(require,module,exports){
 "use strict";
 
+var geom = require("./util/geom");
 
-var levRnd = __webpack_require__(8);
-var recRnd = __webpack_require__(11);
-var objRnd = __webpack_require__(12);
+exports.renderer = function objRender(levReader, recReader){
+	var appleCount = 0;
+
+	var objs = function(){
+		var flowers = [], apples = [], killers = [], starts = [];
+
+		function fl(x, y){
+			flowers.push({ type: "fl", pos: [x, y] });
+		}
+
+		function ap(x, y, grav, anim){
+			appleCount++;
+			apples.push({ type: "ap", pos: [x, y], grav: grav, anim: anim });
+		}
+
+		function ki(x, y){
+			killers.push({ type: "ki", pos: [x, y] });
+		}
+
+		function st(x, y){
+			starts.push({ type: "st", pos: [x, y] });
+		}
+
+		// TODO: handle errors
+		var count = levReader.objCount()
+		for(var x = 0; x < count; x++)
+			levReader.obj(x, fl, ap, ki, st);
+
+		return [].concat(killers, apples, flowers, starts);
+	}();
+
+	var applesTaken = [];
+	var gravityChanges = [];
+	void function(){
+		for(var rec = 0, recR = recReader; recR; recR = recR.next, rec++){
+			var count = recR.eventCount();
+			var gravC = [];
+			for(var x = 0; x < count; x++)
+				recR.event(x, function(time, info, type){
+					if(type == 0) // TODO: check it's actually there?
+						if(objs.length > info && objs[info].type == "ap" && !("taken" in objs[info])){ // TODO: maybe track gravity here?
+							var frame = time/.01456;
+							objs[info].taken = frame;
+							applesTaken.push([frame, rec]);
+							if(objs[info].grav > 0)
+								gravC.push([frame, ["up", "down", "left", "right"][objs[info].grav - 1]]);
+						}
+				});
+			gravityChanges.push(gravC);
+		}
+		applesTaken.sort(function(a, b){
+			return (a[0] > b[0]) - (a[0] < b[0]);
+		});
+	}();
+
+	return {
+		appleCount: function(){
+			return appleCount;
+		},
+
+		applesTaken: function(frame, rec){
+			for(var x = 0; x < applesTaken.length; x++)
+				if(applesTaken[x][0] >= frame)
+					break;
+			return x;
+		},
+
+		gravity: function(frame, rec){
+			var gravC = gravityChanges[rec];
+			if(gravC.length == 0) // returns empty string if gravity is default for whole rec
+				return "";
+			for(var x = 0; x < gravC.length; x++)
+				if(gravC[x][0] >= frame)
+					break;
+			return x? gravC[x - 1][1] : "down";
+		},
+
+		draw: function(canv, lgr, frame, x, y, w, h, scale){
+			canv.save();
+				canv.scale(scale, scale);
+				canv.translate(-x, -y);
+
+				for(var z = 0; z < objs.length; z++){
+					canv.save();
+						canv.translate(objs[z].pos[0], objs[z].pos[1]);
+						canv.scale(40/48, 40/48);
+						canv.translate(-0.5, -0.5);
+						switch(objs[z].type){
+							case "ap":
+								if("taken" in objs[z] && objs[z].taken <= frame)
+									break;
+								if(objs[z].anim)
+									lgr["qfood2"].frame(canv, frame%51, 51);
+								else
+									lgr["qfood1"].frame(canv, frame%34, 34);
+								break;
+							case "fl":
+								lgr["qexit"].frame(canv, frame%50, 50);
+								break;
+							case "ki":
+								lgr["qkiller"].frame(canv, frame%33, 33);
+								break;
+						}
+					canv.restore();
+				}
+			canv.restore();
+		}
+	};
+};
+
+},{"./util/geom":12}],9:[function(require,module,exports){
+"use strict";
+
+var levRnd = require("./levRender");
+var recRnd = require("./recRender");
+var objRnd = require("./objRender");
 
 function signum(n){
 	return n < 0? -1 : n > 0? 1 : 0;
@@ -1321,6 +1718,12 @@ exports.make = function(levRd, lgr, makeCanvas){
 			reset();
 		},
 
+		reset: reset,
+
+		getLevel: function(){
+			return levRd;
+		},
+
 		drawFrame: drawFrame,
 
 		draw: function(canv, x, y, w, h, onlyMaybe){
@@ -1454,531 +1857,469 @@ exports.make = function(levRd, lgr, makeCanvas){
 	};
 };
 
-
-/***/ }),
-/* 8 */
-/***/ (function(module, exports, __webpack_require__) {
-
+},{"./levRender":6,"./objRender":8,"./recRender":11}],10:[function(require,module,exports){
 "use strict";
 
+var bin = require("./binReader");
 
-var quadTree = __webpack_require__(9);
-var geom = __webpack_require__(10);
+var ticker = function(){
+	var n = 0;
+	return function(m){
+		n += m;
+		return n - m;
+	};
+}();
+
+var goffsFrameCount = ticker(4);
+var goffsType = ticker(4);
+ticker(8);
+var goffsLevIdent = ticker(4);
+var goffsLevName = ticker(16);
+var goffsFloat32s = ticker(0);
+
+exports.reader = function recReader(data){
+	var br = bin.reader(data);
+
+	return readerFrom(0);
+
+	function readerFrom(beginPos){
+		var offsFrameCount = beginPos + goffsFrameCount;
+		var offsType = beginPos + goffsType;
+		var offsLevIdent = beginPos + goffsLevIdent;
+		var offsLevName = beginPos + goffsLevName;
+		var offsFloat32s = beginPos + goffsFloat32s;
+
+		br.seek(beginPos);
+		if(beginPos < 0 || br.end())
+			return null;
+		var frameCount = br.word32le();
+
+		var gticker = function(){
+			var offs = offsFloat32s;
+
+			return function(size, count, reader){
+				var offs_ = offs;
+				offs += size*count*frameCount;
+				return function(n){
+					return function(frame){
+						br.seek(offs_ + size*(n*frameCount + frame));
+						return reader();
+					};
+				};
+			};
+		}();
+
+		var float32s = gticker(4, 2, br.binFloat32le); // bikeX, bikeY
+		var int16s = gticker(2, 7, br.int16le); // leftX, leftY, rightX, rightY, headX, headY, bikeR
+		var word8s = gticker(1, 5, br.byte); // leftR, rightR, turn, unk1, unk2
+
+		var eventCount = gticker(4, 1, br.word32le)(0)(0); // heh
+		var offsEvents = br.pos();
+
+		function event(n, fn){
+			br.seek(offsEvents + n*(8 + 4 + 4));
+			return fn(br.binFloat64le(), br.word16le(), br.byte(), br.byte(), br.binFloat32le());
+		}
+
+		return {
+			frameCount: function(){
+				return frameCount;
+			},
+
+			bikeX: float32s(0),
+			bikeY: float32s(1),
+
+			leftX: int16s(0),
+			leftY: int16s(1),
+			rightX: int16s(2),
+			rightY: int16s(3),
+			headX: int16s(4),
+			headY: int16s(5),
+			bikeR: int16s(6),
+
+			leftR: word8s(0),
+			rightR: word8s(1),
+			turn: word8s(2),
+
+			eventCount: function(){
+				return eventCount;
+			},
+
+			event: event,
+
+			event_: function(n){
+				return event(n, function(time, info, type, _, dunno){
+					return {
+						time: time,
+						info: info,
+						type: type,
+						dunno: dunno
+					};
+				});
+			},
+
+			next: readerFrom(offsEvents + eventCount*(8 + 4 + 4) + 4)
+		};
+	}
+};
+
+},{"./binReader":2}],11:[function(require,module,exports){
+"use strict";
 
 function hypot(a, b){
 	return Math.sqrt(a*a + b*b);
 }
 
-exports.renderer = function levRender(reader, lgr){
-	var polyTree = [];
-	var grassPolys = [];
-
-	function isSub(v, outer){
-		function hits(a, b){
-			// does the line [x, y]–[x, inf] intersect the line a–b?
-			var left = Math.min(a[0], b[0]), right = Math.max(a[0], b[0]);
-			if(v[0] < left || v[0] >= right)
-				return false;
-			var m = (b[1] - a[1])/(b[0] - a[0]);
-			var yint = m*(v[0] - a[0]) + a[1];
-			return yint > v[1];
+// (x1, y1)–(x2, y2): line to draw image along
+// bx: length of image used before (x1, y1)
+// br: length of image used after (x2, y2)
+// by: proportional (of ih) y offset within the image the line is conceptually along
+// ih: image height
+function skewimage(canv, img, bx, by, br, ih, x1, y1, x2, y2, box){
+	var o = x2 - x1, a = y2 - y1;
+	canv.save();
+		canv.translate(x1, y1);
+		canv.rotate(Math.atan2(a, o));
+		canv.translate(-bx, -by*ih);
+		canv.scale(bx + br + hypot(o, a), ih);
+		img.draw(canv);
+		if(box){
+			canv.strokeStyle = "purple";
+			canv.lineWidth = 0.02;
+			canv.strokeRect(0, 0, 1, 1);
 		}
+	canv.restore();
+}
 
-		var n = 0;
-		for(var z = 0; z < outer.length; z++)
-			if(hits(outer[z], outer[(z + 1)%outer.length]))
-				n++;
-		return n%2 != 0;
-	}
+function target(canv, x, y, s){
+	canv.beginPath();
+	canv.moveTo(x - s/2, y);
+	canv.lineTo(x + s/2, y);
+	canv.moveTo(x, y - s/2);
+	canv.lineTo(x, y + s/2);
+	canv.stroke();
+}
 
-	function addPoly(vertices, tree){
-		var newTree = [];
-		for(var x = 0; x < tree.length; x++){
-			if(isSub(vertices[0], tree[x].vertices)){
-				// assertion: newTree non-empty or consistency error
-				if(false) // actually, game itself doesn't care, only the editor
-					{}
-				return addPoly(vertices, tree[x].inner);
-			}
-			if(isSub(tree[x].vertices[0], vertices)){
-				newTree.push(tree[x]);
-				if(x + 1 == tree.length)
-					tree.pop();
-				else
-					tree[x] = tree.pop();
-				x--;
-			}
-		}
-		return tree[x] = { vertices: vertices, inner: newTree };
-	}
+function limb(cwInner, fstParams, sndParams){
+	return function(canv, fstImg, x1, y1, sndImg, x2, y2){
+		var dist = hypot(x2 - x1, y2 - y1);
+		var fstLen = fstParams.length, sndLen = sndParams.length;
 
-	function traverse(tree, isSolid, fn){
-		tree.forEach(function(poly){
-			fn(isSolid, poly.vertices);
-			traverse(poly.inner, !isSolid, fn);
-		});
-	}
+		var prod =
+			(dist + fstLen + sndLen)*
+			(dist - fstLen + sndLen)*
+			(dist + fstLen - sndLen)*
+			(-dist + fstLen + sndLen);
+		var angle = Math.atan2(y2 - y1, x2 - x1);
+		var jointangle = 0;
+		if(prod >= 0 && dist < fstLen + sndLen){
+			// law of sines
+			var circumr = dist*fstLen*sndLen/Math.sqrt(prod);
+			jointangle = Math.asin(sndLen/(2*circumr));
+		}else
+			fstLen = fstLen/(fstLen + sndLen)*dist;
 
-	var minX = Infinity, minY = Infinity;
-	var maxX = -Infinity, maxY = -Infinity;
+		if(cwInner)
+			jointangle *= -1;
+			
+		var jointx = x1 + fstLen*Math.cos(angle + jointangle);
+		var jointy = y1 + fstLen*Math.sin(angle + jointangle);
 
-	reader.polyReader(function(grass, count, vertices){
-		var poly = [];
-		vertices(function(x, y){
-			minX = Math.min(minX, x);
-			minY = Math.min(minY, y);
-			maxX = Math.max(maxX, x);
-			maxY = Math.max(maxY, y);
-			poly.push([x, y]);
-		});
-		if(grass)
-			grassPolys.push(poly);
-		else
-			addPoly(poly, polyTree);
-	});
-
-	var pictures = function(){
-		var tree;
-		var maxImgW, maxImgH; // for overbounding in .traverse
-
-		function traverse(x, y, w, h, fn){
-			tree.traverse(x - maxImgW, y - maxImgH, w + maxImgW, h + maxImgH, fn);
-		}
-
-		function calc(){
-			tree = quadTree.make(1);
-			maxImgW = maxImgH = 0;
-
-			var count = reader.picCount();
-			for(var x = 0; x < count; x++){
-				var pic = reader.pic_(x);
-				pic.num = x;
-				// TODO: defaults?
-				tree.add(pic.x, pic.y, pic);
-				[pic.picture, pic.mask, pic.texture].forEach(function(picname){
-					var img = lgr.picts[picname];
-					if(img && img.width !== undefined && img.height !== undefined){
-						img.touch();
-						maxImgW = Math.max(maxImgW, img.width/48);
-						maxImgH = Math.max(maxImgH, img.height/48);
-					}
-				});
-			}
-		}
-
-		return {
-			calc: calc,
-			traverse: traverse,
-			dbgdraw: function(canv, x, y, w, h){
-				tree.dbgdraw(canv, x, y, w, h);
-			}
-		};
-	}();
-
-	var grass = function(){
-		var tree;
-		var maxImgW, maxImgH; // for overbounding in .traverse
-
-		// assuming w and h are positive
-		function traverse(x, y, w, h, fn){
-			tree.traverse(x - maxImgW, y - maxImgH, w + maxImgW, h + maxImgH, fn);
-		}
-
-		function calc(){
-			tree = quadTree.make(1);
-			maxImgW = maxImgH = 0;
-
-			grassPolys.forEach(function(p){
-				calcGrassPoly(48, p);
-			});
-
-			function calcGrassPoly(scale, poly){
-				// the path selection is demonstrably wrong, but it probably works in all reasonable cases.
-				// it draws along the path from the left-most vertex to the right-most vertex that doesn't
-				//   include the widest edge.
-				// haven't figured out exactly what Elma itself does.
-				var minX = Infinity, maxX = -Infinity, minXi, maxXi;
-				for(var z = 0; z < poly.length; z++){
-					// WARNING: funny code
-					if(minX != (minX = Math.min(minX, poly[z][0])))
-						minXi = z;
-					if(maxX != (maxX = Math.max(maxX, poly[z][0])))
-						maxXi = z;
-				}
-				var maxW = 0;
-				for(var z = minXi; z%poly.length != maxXi; z++)
-					maxW = Math.max(maxW, Math.abs(poly[z%poly.length][0] - poly[(z + 1)%poly.length][0]));
-				var dir = -1;
-				for(var z = poly.length + minXi; z%poly.length != maxXi; z--)
-					if(maxW != (maxW = Math.max(maxW, Math.abs(poly[z%poly.length][0] - poly[(z - 1)%poly.length][0]))))
-						dir = 1;
-				function yAt(x){
-					for(var z = poly.length + minXi; z%poly.length != maxXi; z += dir){
-						var from = poly[z%poly.length], to = poly[(z + dir)%poly.length];
-						if(from[0] <= x && x < to[0]){
-							var m = (to[1] - from[1])/(to[0] - from[0]);
-							return m*(x - from[0]) + from[1];
-						}
-					}
-				}
-
-				var curX = poly[minXi][0]*scale, curY = poly[minXi][1]*scale;
-				var gUps = lgr.grassUp(), gDowns = lgr.grassDown();
-				while(curX < maxX*scale){
-					var bestD = Infinity, bestA, bestI;
-					for(var a = 0; a < gUps.length; a++){
-						if(curX + gUps[a].width >= maxX*scale)
-							continue;
-						var dist = Math.abs(yAt((curX + gUps[a].width)/scale)*scale - (curY - (gUps[a].height - 41)));
-						if(dist < bestD){
-							bestD = dist;
-							bestA = gUps;
-							bestI = a;
-						}
-					}
-					for(var a = 0; a < gDowns.length; a++){
-						if(curX + gDowns[a].width >= maxX*scale)
-							continue;
-						var dist = Math.abs(yAt((curX + gDowns[a].width)/scale)*scale - (curY + (gDowns[a].height - 41)));
-						if(dist < bestD){
-							bestD = dist;
-							bestA = gDowns;
-							bestI = a;
-						}
-					}
-					if(!bestA){
-						curX++;
-						continue;
-					}
-					var pict = bestA[bestI];
-					var fall = (pict.height - 41)*(bestA == gUps? -1 : 1);
-					var fcx = Math.floor(curX), fcy = Math.floor(curY + fall);
-					var fcyTop = Math.floor(curY) - Math.ceil((pict.height - fall)/2);
-
-					maxImgW = Math.max(maxImgW, pict.width/scale);
-					maxImgH = Math.max(maxImgH, pict.height/scale);
-
-					tree.add(fcx/scale, fcyTop/scale, pict);
-
-					curX += pict.width;
-					curY += fall;
-				}
-			}
-		}
-
-		return {
-			calc: calc,
-			traverse: traverse,
-			dbgdraw: function(canv, x, y, w, h){
-				tree.dbgdraw(canv, x, y, w, h);
-			}
-		};
-	}();
-
-	function drawPictures(pics, canv, scale, clipping, x, y, w, h){
-		function draw(pic){
-			// TODO: are masks specifically for textures? dunno
-			var img = lgr.picts[pic.picture];
-			if(pic.clipping != clipping)
-				return;
-			if(img && img.draw){
-				if(!geom.rectsOverlap(pic.x, pic.y, img.width, img.height, x, y, w, h))
-					return;
-				canv.save();
-					canv.translate(pic.x*scale, pic.y*scale);
-					canv.scale(scale/48, scale/48);
-					img.drawAt(canv);
-				canv.restore();
-				return;
-			}
-			img = lgr.picts[pic.texture];
-			var mask = lgr.picts[pic.mask];
-			if(img && img.draw && mask && mask.draw){
-				if(!geom.rectsOverlap(pic.x, pic.y, mask.width, mask.height, x, y, w, h))
-					return;
-				// TODO: scale textures, fix otherwise
-				var px = Math.round(pic.x*scale), py = Math.round(pic.y*scale);
-				var offsX = px >= 0? px%img.width : img.width - -px%img.width;
-				var offsY = py >= 0? py%img.height : img.height - -py%img.height;
-				mask.touch();
-				canv.save();
-					canv.translate(pic.x*scale, pic.y*scale);
-					canv.beginPath();
-					canv.moveTo(0, 0);
-					canv.lineTo(mask.width*scale/48, 0);
-					canv.lineTo(mask.width*scale/48, mask.height*scale/48);
-					canv.lineTo(0, mask.height*scale/48);
-					canv.clip();
-					canv.translate(-offsX, -offsY);
-					img.repeat(canv, offsX + mask.width*scale/48, offsY + mask.height*scale/48);
-				canv.restore();
-			}
-		}
-
-		pics.forEach(draw);
-	}
-
-	var lgrIdent = {};
-	var optIdent = {};
-	var optGrass = true;
-	var optPictures = true;
-	var optCustomBackgroundSky = true;
-
-	// (x, y)–(x + w, y + h): viewport in Elma dimensions
-	function draw(canv, x, y, w, h, scale){
-		if(lgrIdent != lgr._ident){
-			if(optGrass)
-				grass.calc();
-			if(optPictures)
-				pictures.calc();
-			lgrIdent = lgr._ident;
-		}
-
-		var pics = [];
-		pictures.traverse(x, y, w, h, function(x, y, pic){
-			pics.push(pic);
-		});
-		pics.sort(function(a, b){
-			return (a.dist < b.dist) - (a.dist > b.dist) || (a.num < b.num) - (a.num > b.num);
-		});
-
-		if(optPictures){
-			canv.save();
-				canv.translate(-x*scale, -y*scale);
-				drawPictures(pics, canv, scale, "s", x, y, w, h); // sky
-			canv.restore();
-		}
-
-		canv.save();
-			canv.beginPath();
-			canv.moveTo(0, 0);
-			canv.lineTo(w*scale, 0);
-			canv.lineTo(w*scale, h*scale);
-			canv.lineTo(0, h*scale);
-
-			canv.translate(-x*scale, -y*scale);
-
-			traverse(polyTree, false, function(isSolid, verts){
-				canv.moveTo(scale*verts[verts.length - 1][0], scale*verts[verts.length - 1][1]);
-				for(var z = verts.length - 2; z >= 0; z--)
-					canv.lineTo(scale*verts[z][0], scale*verts[z][1]);
-			});
-
-			canv.translate(x*scale, y*scale);
-			canv.clip(); // clip isn't antialiased in Chromium—different with destination-out
-			void function(){
-				// TODO: check that it's not accessing something it shouldn't
-				var img = optCustomBackgroundSky && lgr.picts[reader.ground()] || lgr.picts.ground;
-				var px = Math.floor(x*scale), py = Math.floor(y*scale);
-				var pw = Math.floor(w*scale), ph = Math.floor(h*scale);
-				var offsX = x >= 0? px%img.width : img.width - -px%img.width;
-				var offsY = y >= 0? py%img.height : img.height - -py%img.height;
-				canv.save();
-					canv.translate(-img.width - offsX, -img.height - offsY);
-					img.repeat(canv, pw + img.width*2, ph + img.height*2);
-				canv.restore();
-			}();
-
-			if(optPictures){
-				canv.save();
-					canv.translate(-x*scale, -y*scale);
-					drawPictures(pics, canv, scale, "g", x, y, w, h); // ground
-				canv.restore();
-			}
-
-			canv.translate(-x*scale, -y*scale);
-
-			if(optGrass){
-				canv.save();
-					canv.beginPath();
-					grass.traverse(x, y, w, h + 24, function(grassX, grassY, pict){
-						canv.save();
-							canv.translate(grassX*scale, grassY*scale);
-							var b = pict.borders;
-							canv.scale(scale/48, scale/48);
-							canv.moveTo(0, -24);
-							for(var z = 0; z < b.length; z++){
-								canv.lineTo(z, b[z] + 1);
-								canv.lineTo(z + 1, b[z] + 1);
-							}
-							canv.lineTo(pict.width, -24);
-							canv.closePath();
-						canv.restore();
-					});
-					canv.clip();
-
-					canv.translate(x*scale, y*scale);
-
-					void function(){
-						var img = lgr.picts.qgrass;
-						var px = Math.floor(x*scale), py = Math.floor(y*scale);
-						var pw = Math.floor(w*scale), ph = Math.floor(h*scale);
-						var offsX = x >= 0? px%img.width : img.width - -px%img.width;
-						var offsY = y >= 0? py%img.height : img.height - -py%img.height;
-						canv.save();
-							canv.translate(-img.width - offsX, -img.height - offsY);
-							img.repeat(canv, pw + img.width*2, ph + img.height*2);
-						canv.restore();
-					}();
-				canv.restore();
-
-				grass.traverse(x, y, w, h, function(grassX, grassY, pict){
-					canv.save();
-						canv.translate(grassX*scale, grassY*scale);
-						canv.scale(scale/48, scale/48);
-						pict.drawAt(canv);
-					canv.restore();
-				});
-			}
-		canv.restore();
-
-		if(optPictures){
-			canv.save();
-				canv.translate(-x*scale, -y*scale);
-				drawPictures(pics, canv, scale, "u", x, y, w, h); // unclipped
-			canv.restore();
-		}
-
-		canv.strokeStyle = "#ff0000";
-		if(window.dbg){
-			canv.strokeRect(0, 0, w*scale, h*scale);
-			if(window.dbg > 1){
-				canv.save();
-					canv.translate(-x*scale, -y*scale);
-					canv.scale(scale, scale);
-					canv.lineWidth = 1/48;
-					canv.strokeStyle = "orange";
-					if(window.dbg & 2)
-						grass.dbgdraw(canv, x, y, w, h);
-					canv.strokeStyle = "purple";
-					if(window.dbg & 4)
-						pictures.dbgdraw(canv, x, y, w, h);
-				canv.restore();
-			}
-		}
+		skewimage(canv, fstImg, fstParams.bx, fstParams.by, fstParams.br, fstParams.ih, jointx, jointy, x1, y1);
+		skewimage(canv, sndImg, sndParams.bx, sndParams.by, sndParams.br, sndParams.ih, x2, y2, jointx, jointy);
 	};
 
-	function cached(num, mkCanv){
-		var cscale, xp, yp, wp, hp;
-		var canvs = [];
-		var cacheLgrIdent;
-		var cacheOptIdent;
+}
 
-		function update(which, canv){
-			var x = which%num, y = Math.floor(which/num);
-			x = xp + x*wp;
-			y = yp + y*hp;
-			var ctx = canv.getContext("2d");
-			ctx.clearRect(0, 0, canv.width, canv.height);
-			draw(ctx, x/cscale, y/cscale, wp/cscale, hp/cscale, cscale);
+var legLimb = limb(false, {
+	length: 26.25/48,
+	bx: 0, by: 0.6, br: 6/48, ih: 39.4/48/3
+}, {
+	length: 1 - 26.25/48,
+	bx: 5/48/3, by: 0.45, br: 4/48, ih: 60/48/3
+});
+
+var armLimb = limb(true, {
+	length: 0.3234,
+	bx: 12.2/48/3, by: 0.5, br: 13/48/3, ih: -32/48/3
+}, {
+	length: 0.3444,
+	bx: 3/48, by: 0.5, br: 13.2/48/3, ih: 22.8/48/3
+});
+
+exports.renderer = function recRender(reader){
+	var turnFrames = function(){
+		if(reader.lastTurn)
+			return [];
+
+		var fc = reader.frameCount();
+		var o = [], t = 0;
+		for(var f = 0; f < fc; f++){
+			var tmp = reader.turn(f) >> 1 & 1;
+			if(tmp != t)
+				o.push(f);
+			t = tmp;
 		}
+		return o;
+	}();
 
-		function invalid(){
-			return (
-				lgr._ident != lgrIdent ||
-				cacheLgrIdent != lgrIdent ||
-				cacheOptIdent != optIdent);
-		}
+	var volts = function(){
+		if(reader.lastVolt)
+			return;
 
-		return function cachedDraw(canv, x, y, w, h, scale){
-			w = Math.ceil(w*scale);
-			h = Math.ceil(h*scale);
-			x = Math.floor(x*scale);
-			y = Math.floor(y*scale);
-			if(invalid() || scale != cscale || Math.ceil(w/(num - 1)) != wp || Math.ceil(h/(num - 1)) != hp || !geom.rectsOverlap(xp, yp, wp*num, hp*num, x, y, w, h)){
-				cacheLgrIdent = lgrIdent;
-				cacheOptIdent = optIdent;
-				wp = Math.ceil(w/(num - 1));
-				hp = Math.ceil(h/(num - 1));
-				xp = x - Math.floor(wp/2);
-				yp = y - Math.floor(hp/2);
-				cscale = scale;
-				canvs = [];
-				for(var z = 0; z < num*num; z++)
-					update(z, canvs[z] = mkCanv(wp, hp));
-			}
-			// TODO: will render things unnecessarily if it jumps a whole column/row
-			// doesn't matter when num == 2
-			// should try to generalise this—whole thing looks unreadable
-			while(yp > y){ // stuff missing from top
-				yp -= hp;
-				canvs.splice.apply(canvs, [0, 0].concat(canvs.splice(num*(num - 1), num)));
-				for(var z = 0; z < num; z++)
-					update(z, canvs[z]);
-			}
-			while(yp + num*hp < y + h){ // stuff missing from bottom
-				yp += hp;
-				canvs.splice.apply(canvs, [num*(num - 1), 0].concat(canvs.splice(0, num)));
-				for(var z = 0; z < num; z++)
-					update(num*(num - 1) + z, canvs[num*(num - 1) + z]);
-			}
-			while(xp > x){ // stuff missing from left
-				xp -= wp;
-				for(var z = 0; z < num; z++){
-					canvs.splice(z*num, 0, canvs.splice((z + 1)*num - 1, 1)[0]);
-					update(z*num, canvs[z*num]);
+		var ec = reader.eventCount();
+		var o = [];
+		for(var e = 0; e < ec; e++)
+			reader.event(e, function(time, info, type, a, b){
+				var frame = Math.ceil(time/.01456);
+				switch(type){
+					case 6: // right volt
+						o.push([frame, true]);
+						break;
+					case 7: // left volt
+						o.push([frame, false]);
+						break;
 				}
-			}
-			while(xp + num*wp < x + w){ // stuff missing from right
-				xp += wp;
-				for(var z = 0; z < num; z++){
-					canvs.splice((z + 1)*num - 1, 0, canvs.splice(z*num, 1)[0]);
-					update((z + 1)*num - 1, canvs[(z + 1)*num - 1]);
-				}
-			}
+			});
+			return o;
+	}();
 
-			for(var xi = 0; xi < num; xi++)
-				for(var yi = 0; yi < num; yi++)
-					canv.drawImage(canvs[yi*num + xi], xp - x + xi*wp, yp - y + yi*hp);
+	var lastTurn = reader.lastTurn || function lastTurn(frame){
+		for(var x = 0; x < turnFrames.length; x++)
+			if(turnFrames[x] > frame)
+				break;
+		return x? turnFrames[x - 1] : -1;
+	}
 
+	var lastVolt = reader.lastVolt || function lastVolt(frame){
+		for(var x = 0; x < volts.length; x++)
+			if(volts[x][0] > frame)
+				break;
+		return x? volts[x - 1] : null;
+	}
+
+	function interpolate(fn){
+		return function(n){
+			var f = Math.floor(n), o = n - f, r = fn(f);
+			if(o == 0)
+				return r;
+			return r + (fn(f + 1) - r)*o;
 		};
+	}
+
+	function interpolateAng(fn, mod){
+		return function(n){
+			var f = Math.floor(n), o = n - f, r = fn(f);
+			if(o == 0)
+				return r;
+			var rs = fn(f + 1), offs = 0;
+			var diff1 = rs - r, diff2 = (rs + mod/2)%mod - (r + mod/2)%mod;
+			var diff = Math.abs(diff1) < Math.abs(diff2)? diff1 : diff2;
+			return r + diff*o;
+		};
+	}
+
+	function turnScale(x){
+		return -Math.cos(x*Math.PI);
+	}
+
+	var bikeXi = interpolate(reader.bikeX);
+	var bikeYi = interpolate(reader.bikeY);
+	var bikeRi = interpolateAng(reader.bikeR, 10000);
+	var leftXi = interpolate(reader.leftX);
+	var leftYi = interpolate(reader.leftY);
+	var leftRi = interpolateAng(reader.leftR, 250);
+	var rightXi = interpolate(reader.rightX);
+	var rightYi = interpolate(reader.rightY);
+	var rightRi = interpolateAng(reader.rightR, 250);
+	var headXi = interpolate(reader.headX);
+	var headYi = interpolate(reader.headY);
+
+	function wheel(canv, lgr, wheelX, wheelY, wheelR){
+		canv.save();
+			canv.translate(wheelX, -wheelY);
+			canv.rotate(-wheelR);
+			canv.scale(38.4/48, 38.4/48);
+			canv.translate(-0.5, -0.5);
+			lgr["wheel"].draw(canv);
+		canv.restore();
+	}
+
+	// (x, y): top left in Elma coordinates
+	// arguably a microoptimisation, but it doesn't produce any objects in the JS world
+	function draw(canv, lgr, shirt, frame, x, y, scale){
+		canv.save();
+			canv.translate(/*Math.ceil*/(scale*(-x + bikeXi(frame))), /*Math.ceil*/(scale*(-y - bikeYi(frame))));
+			canv.scale(scale, scale);
+			canv.beginPath();
+
+			var bikeR = bikeRi(frame)*Math.PI*2/10000;
+			var turn = reader.turn(Math.floor(frame)) >> 1 & 1;
+			var leftX = leftXi(frame)/1000;
+			var leftY = leftYi(frame)/1000;
+			var leftR = leftRi(frame)*Math.PI*2/250;
+			var rightX = rightXi(frame)/1000;
+			var rightY = rightYi(frame)/1000;
+			var rightR = rightRi(frame)*Math.PI*2/250;
+			var headX = headXi(frame)/1000;
+			var headY = headYi(frame)/1000;
+			var lastTurnF = lastTurn(frame);
+			var lv = lastVolt(frame);
+
+			var animlen = 28;
+			var animpos = lv != null && frame - lv[0] < animlen? (frame - lv[0])/animlen : 0;
+			var turnpos = lastTurnF >= 0 && lastTurnF + 24 > frame? (frame - lastTurnF)/24 : 0;
+
+			var backX = !turn? rightX : leftX;
+			var backY = !turn? rightY : leftY;
+			var backR = !turn? rightR : leftR;
+			var frontX = turn? rightX : leftX;
+			var frontY = turn? rightY : leftY;
+			var frontR = turn? rightR : leftR;
+
+			if(turnpos == 0 || turnpos > 0.5)
+				wheel(canv, lgr, backX, backY, backR);
+			if(turnpos <= 0.5)
+				wheel(canv, lgr, frontX, frontY, frontR);
+
+			canv.save();
+				canv.rotate(-bikeR);
+				if(turn)
+					canv.scale(-1, 1);
+				if(turnpos > 0)
+					canv.scale(turnScale(turnpos), 1);
+
+				var wx, wy, a, r;
+				var hbarsX = -21.5, hbarsY = -17;
+				canv.save();
+					canv.scale(1/48, 1/48);
+
+					// front suspension
+					wx = turn? rightX : leftX;
+					wy = turn? -rightY : -leftY;
+					a = Math.atan2(wy, (turn? -1 : 1) * wx) + (turn? -1 : 1) * bikeR;
+					r = hypot(wx, wy);
+					skewimage(canv, lgr["susp1"], 2, 0.5, 5, 6, 48*r * Math.cos(a), 48*r * Math.sin(a), hbarsX, hbarsY);
+
+					// rear suspension
+					wx = turn? leftX : rightX;
+					wy = turn? -leftY : -rightY;
+					a = Math.atan2(wy, (turn? -1 : 1) * wx) + (turn? -1 : 1) * bikeR;
+					r = hypot(wx, wy);
+					//skewimage(canv, lgr["susp2"], 5, 0.5, 5, 6.5, 48*r*Math.cos(a), 48*r*Math.sin(a), 10, 20);
+					skewimage(canv, lgr["susp2"], 0, 0.5, 5, 6, 9, 20, 48*r*Math.cos(a), 48*r*Math.sin(a));
+				canv.restore();
+
+				canv.save(); // bike
+					canv.translate(-43/48, -12/48);
+					canv.rotate(-Math.PI*0.197);
+					canv.scale(0.215815*380/48, 0.215815*301/48);
+					lgr["bike"].draw(canv);
+				canv.restore();
+
+				canv.save(); // kuski
+					r = hypot(headX, headY);
+					a = Math.atan2(-headY, turn? -headX : headX) + (turn? -bikeR : bikeR);
+					wx = r*Math.cos(a);
+					wy = r*Math.sin(a);
+					canv.translate(wx, wy);
+
+					canv.save(); // head
+						canv.translate(-15.5/48, -42/48);
+						canv.scale(23/48, 23/48);
+						lgr["head"].draw(canv);
+					canv.restore();
+
+					var bumx = 19.5/48, bumy = 0;
+					var pedalx = -wx + 10.2/48/3, pedaly = -wy + 65/48/3;
+					legLimb(canv, lgr["q1thigh"], bumx, bumy, lgr["q1leg"], pedalx, pedaly);
+
+					canv.save(); // torso
+						canv.translate(17/48, 9.25/48);
+						canv.rotate(Math.PI + 2/3);
+						canv.scale(100/48/3, 58/48/3);
+						if(shirt && shirt.touch()){
+							// assumes shirts are rotated as on EOL site
+							canv.translate(0.5, 0.5);
+							canv.rotate(Math.PI/2);
+							canv.translate(-0.5, -0.5);
+							shirt.draw(canv);
+						}else
+							lgr["q1body"].draw(canv);
+					canv.restore();
+
+					var shoulderx = 0/48, shouldery = -17.5/48;
+					var handlex = -wx - 64.5/48/3, handley = -wy - 59.6/48/3;
+					var handx = handlex, handy = handley;
+
+					var animx = shoulderx, animy = shouldery;
+					if(animpos > 0){
+						var dangle, ascale;
+						if(lv[1] == turn){
+							if(animpos >= 0.25)
+								animpos = 0.25 - 0.25*(animpos - 0.25)/0.75;
+							dangle = 10.8*animpos;
+							ascale = 1 - 1.2*animpos;
+						}else{
+							if(animpos >= 0.2)
+								animpos = 0.2 - 0.2*(animpos - 0.2)/0.8;
+							dangle = -8*animpos;
+							ascale = 1 + 0.75*animpos;
+						}
+						var at = Math.atan2(handley - animy, handlex - animx) + dangle;
+						var dist = ascale*hypot(handley - animy, handlex - animx);
+						handx = animx + dist*Math.cos(at);
+						handy = animy + dist*Math.sin(at);
+					}
+
+					armLimb(canv, lgr["q1up_arm"], shoulderx, shouldery, lgr["q1forarm"], handx, handy);
+				canv.restore();
+			canv.restore();
+
+			if(turnpos != 0 && turnpos <= 0.5)
+				wheel(canv, lgr, backX, backY, backR);
+			if(turnpos > 0.5)
+				wheel(canv, lgr, frontX, frontY, frontR);
+		canv.restore();
 	}
 
 	return {
 		draw: draw,
-		cached: cached,
-		setGrass: function(v){ optGrass = v; optIdent = {}; },
-		setPictures: function(v){ optPictures = v; optIdent = {}; },
-		setCustomBackgroundSky: function(v){ optCustomBackgroundSky = v; optIdent = {}; },
-		drawSky: function(canv, x, y, w, h, scale){
-			// TODO: check that it's not accessing something it shouldn't
-			var img = optCustomBackgroundSky && lgr.picts[reader.sky()] || lgr.picts.sky;
-			x = Math.floor(x*scale/3);
-			w *= scale;
-			h *= scale;
-			if((x = x%img.width) < 0)
-				x = img.width + x;
-			canv.save();
-				canv.translate(-x, 0);
-				img.repeat(canv, w + img.width, h);
-			canv.restore();
-		}
+		bikeXi: bikeXi,
+		bikeYi: bikeYi
 	};
 };
 
+},{}],12:[function(require,module,exports){
+exports.rectsOverlap = rectsOverlap;
+function rectsOverlap(x1, y1, w1, h1, x2, y2, w2, h2){
+	return ( // parentheses required! ASI!
+		x1 + w1 >= x2 &&
+		y1 + h1 >= y2 &&
+		x2 + w2 >= x1 &&
+		y2 + h2 >= y1);
+}
 
-/***/ }),
-/* 9 */
-/***/ (function(module, exports, __webpack_require__) {
-
+},{}],13:[function(require,module,exports){
 "use strict";
 
-
-var geom = __webpack_require__(10);
+var geom = require("./geom");
 
 // an append-only quad tree
 
 function sum(names){
 	var o = {};
-	names.forEach(function(name){
-		o[name] = function(val){
-			return { type: name, v: val };
-		};
-	});
+	for(var name in names)
+		void function(){
+			var type = names[name];
+			o[name] = function(val){
+				return { type: type, v: val };
+			};
+		}();
 	return o;
 };
 
-var Tree = sum(["nil", "tip", "branch"]);
+var Tree = sum({ nil: "nil", tip: "tip",  branch: "branch" });
 var nil = Tree.nil();
 
 exports.make = function quadTree(minW){
@@ -2100,470 +2441,4 @@ exports.make = function quadTree(minW){
 	};
 };
 
-
-/***/ }),
-/* 10 */
-/***/ (function(module, exports) {
-
-exports.rectsOverlap = rectsOverlap;
-function rectsOverlap(x1, y1, w1, h1, x2, y2, w2, h2){
-	return ( // parentheses required! ASI!
-		x1 + w1 >= x2 &&
-		y1 + h1 >= y2 &&
-		x2 + w2 >= x1 &&
-		y2 + h2 >= y1);
-}
-
-
-/***/ }),
-/* 11 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-function hypot(a, b){
-	return Math.sqrt(a*a + b*b);
-}
-
-// (x1, y1)–(x2, y2): line to draw image along
-// bx: length of image used before (x1, y1)
-// br: length of image used after (x2, y2)
-// by: proportional (of ih) y offset within the image the line is conceptually along
-// ih: image height
-function skewimage(canv, img, bx, by, br, ih, x1, y1, x2, y2, box){
-	var o = x2 - x1, a = y2 - y1;
-	canv.save();
-		canv.translate(x1, y1);
-		canv.rotate(Math.atan2(a, o));
-		canv.translate(-bx, -by*ih);
-		canv.scale(bx + br + hypot(o, a), ih);
-		img.draw(canv);
-		if(box){
-			canv.strokeStyle = "purple";
-			canv.lineWidth = 0.02;
-			canv.strokeRect(0, 0, 1, 1);
-		}
-	canv.restore();
-}
-
-function target(canv, x, y, s){
-	canv.beginPath();
-	canv.moveTo(x - s/2, y);
-	canv.lineTo(x + s/2, y);
-	canv.moveTo(x, y - s/2);
-	canv.lineTo(x, y + s/2);
-	canv.stroke();
-}
-
-function limb(cwInner, fstParams, sndParams){
-	return function(canv, fstImg, x1, y1, sndImg, x2, y2){
-		var dist = hypot(x2 - x1, y2 - y1);
-		var fstLen = fstParams.length, sndLen = sndParams.length;
-
-		var prod =
-			(dist + fstLen + sndLen)*
-			(dist - fstLen + sndLen)*
-			(dist + fstLen - sndLen)*
-			(-dist + fstLen + sndLen);
-		var angle = Math.atan2(y2 - y1, x2 - x1);
-		var jointangle = 0;
-		if(prod >= 0 && dist < fstLen + sndLen){
-			// law of sines
-			var circumr = dist*fstLen*sndLen/Math.sqrt(prod);
-			jointangle = Math.asin(sndLen/(2*circumr));
-		}else
-			fstLen = fstLen/(fstLen + sndLen)*dist;
-
-		if(cwInner)
-			jointangle *= -1;
-			
-		var jointx = x1 + fstLen*Math.cos(angle + jointangle);
-		var jointy = y1 + fstLen*Math.sin(angle + jointangle);
-
-		skewimage(canv, fstImg, fstParams.bx, fstParams.by, fstParams.br, fstParams.ih, jointx, jointy, x1, y1);
-		skewimage(canv, sndImg, sndParams.bx, sndParams.by, sndParams.br, sndParams.ih, x2, y2, jointx, jointy);
-	};
-
-}
-
-var legLimb = limb(false, {
-	length: 26.25/48,
-	bx: 0, by: 0.6, br: 6/48, ih: 39.4/48/3
-}, {
-	length: 1 - 26.25/48,
-	bx: 5/48/3, by: 0.45, br: 4/48, ih: 60/48/3
-});
-
-var armLimb = limb(true, {
-	length: 0.3234,
-	bx: 12.2/48/3, by: 0.5, br: 13/48/3, ih: -32/48/3
-}, {
-	length: 0.3444,
-	bx: 3/48, by: 0.5, br: 13.2/48/3, ih: 22.8/48/3
-});
-
-exports.renderer = function recRender(reader){
-	var turnFrames = function(){
-		var fc = reader.frameCount();
-		var o = [], t = 0;
-		for(var f = 0; f < fc; f++){
-			var tmp = reader.turn(f) >> 1 & 1;
-			if(tmp != t)
-				o.push(f);
-			t = tmp;
-		}
-		return o;
-	}();
-
-	var volts = [];
-	void function(){
-		var ec = reader.eventCount();
-		var o = [];
-		for(var e = 0; e < ec; e++)
-			reader.event(e, function(time, info, type, a, b){
-				var frame = Math.ceil(time/.01456);
-				switch(type){
-					case 5: // turn
-//						turnFrames.push(frame);
-						break;
-					case 6: // right volt
-						volts.push([frame, true]);
-						break;
-					case 7: // left volt
-						volts.push([frame, false]);
-						break;
-				}
-			});
-			return o;
-	}();
-
-	function lastTurn(frame){
-		for(var x = 0; x < turnFrames.length; x++)
-			if(turnFrames[x] > frame)
-				break;
-		return x? turnFrames[x - 1] : -1;
-	}
-
-	function lastVolt(frame){
-		for(var x = 0; x < volts.length; x++)
-			if(volts[x][0] > frame)
-				break;
-		return x? volts[x - 1] : null;
-	}
-
-	function interpolate(fn){
-		return function(n){
-			var f = Math.floor(n), o = n - f, r = fn(f);
-			if(o == 0)
-				return r;
-			return r + (fn(f + 1) - r)*o;
-		};
-	}
-
-	function interpolateAng(fn, mod){
-		return function(n){
-			var f = Math.floor(n), o = n - f, r = fn(f);
-			if(o == 0)
-				return r;
-			var rs = fn(f + 1), offs = 0;
-			var diff1 = rs - r, diff2 = (rs + mod/2)%mod - (r + mod/2)%mod;
-			var diff = Math.abs(diff1) < Math.abs(diff2)? diff1 : diff2;
-			return r + diff*o;
-		};
-	}
-
-	function turnScale(x){
-		return -Math.cos(x*Math.PI);
-	}
-
-	var bikeXi = interpolate(reader.bikeX);
-	var bikeYi = interpolate(reader.bikeY);
-	var bikeRi = interpolateAng(reader.bikeR, 10000);
-	var leftXi = interpolate(reader.leftX);
-	var leftYi = interpolate(reader.leftY);
-	var leftRi = interpolateAng(reader.leftR, 250);
-	var rightXi = interpolate(reader.rightX);
-	var rightYi = interpolate(reader.rightY);
-	var rightRi = interpolateAng(reader.rightR, 250);
-	var headXi = interpolate(reader.headX);
-	var headYi = interpolate(reader.headY);
-
-	function wheel(canv, lgr, wheelX, wheelY, wheelR){
-		canv.save();
-			canv.translate(wheelX, -wheelY);
-			canv.rotate(-wheelR);
-			canv.scale(38.4/48, 38.4/48);
-			canv.translate(-0.5, -0.5);
-			lgr.wheel.draw(canv);
-		canv.restore();
-	}
-
-	// (x, y): top left in Elma coordinates
-	// arguably a microoptimisation, but it doesn't produce any objects in the JS world
-	function draw(canv, lgr, shirt, frame, x, y, scale){
-		canv.save();
-			canv.translate(/*Math.ceil*/(scale*(-x + bikeXi(frame))), /*Math.ceil*/(scale*(-y - bikeYi(frame))));
-			canv.scale(scale, scale);
-			canv.beginPath();
-
-			var bikeR = bikeRi(frame)*Math.PI*2/10000;
-			var turn = reader.turn(Math.floor(frame)) >> 1 & 1;
-			var leftX = leftXi(frame)/1000;
-			var leftY = leftYi(frame)/1000;
-			var leftR = leftRi(frame)*Math.PI*2/250;
-			var rightX = rightXi(frame)/1000;
-			var rightY = rightYi(frame)/1000;
-			var rightR = rightRi(frame)*Math.PI*2/250;
-			var headX = headXi(frame)/1000;
-			var headY = headYi(frame)/1000;
-			var lastTurnF = lastTurn(frame);
-			var lv = lastVolt(frame);
-
-			var animlen = 28;
-			var animpos = lv != null && frame - lv[0] < animlen? (frame - lv[0])/animlen : 0;
-			var turnpos = lastTurnF >= 0 && lastTurnF + 24 > frame? (frame - lastTurnF)/24 : 0;
-
-			var backX = !turn? rightX : leftX;
-			var backY = !turn? rightY : leftY;
-			var backR = !turn? rightR : leftR;
-			var frontX = turn? rightX : leftX;
-			var frontY = turn? rightY : leftY;
-			var frontR = turn? rightR : leftR;
-
-			if(turnpos == 0 || turnpos > 0.5)
-				wheel(canv, lgr, backX, backY, backR);
-			if(turnpos <= 0.5)
-				wheel(canv, lgr, frontX, frontY, frontR);
-
-			canv.save();
-				canv.rotate(-bikeR);
-				if(turn)
-					canv.scale(-1, 1);
-				if(turnpos > 0)
-					canv.scale(turnScale(turnpos), 1);
-
-				var wx, wy, a, r;
-				var hbarsX = -21.5, hbarsY = -17;
-				canv.save();
-					canv.scale(1/48, 1/48);
-
-					// front suspension
-					wx = turn? rightX : leftX;
-					wy = turn? -rightY : -leftY;
-					a = Math.atan2(wy, (turn? -1 : 1) * wx) + (turn? -1 : 1) * bikeR;
-					r = hypot(wx, wy);
-					skewimage(canv, lgr.susp1, 2, 0.5, 5, 6, 48*r * Math.cos(a), 48*r * Math.sin(a), hbarsX, hbarsY);
-
-					// rear suspension
-					wx = turn? leftX : rightX;
-					wy = turn? -leftY : -rightY;
-					a = Math.atan2(wy, (turn? -1 : 1) * wx) + (turn? -1 : 1) * bikeR;
-					r = hypot(wx, wy);
-					//skewimage(canv, lgr.susp2, 5, 0.5, 5, 6.5, 48*r*Math.cos(a), 48*r*Math.sin(a), 10, 20);
-					skewimage(canv, lgr.susp2, 0, 0.5, 5, 6, 9, 20, 48*r*Math.cos(a), 48*r*Math.sin(a));
-				canv.restore();
-
-				canv.save(); // bike
-					canv.translate(-43/48, -12/48);
-					canv.rotate(-Math.PI*0.197);
-					canv.scale(0.215815*380/48, 0.215815*301/48);
-					lgr.bike.draw(canv);
-				canv.restore();
-
-				canv.save(); // kuski
-					r = hypot(headX, headY);
-					a = Math.atan2(-headY, turn? -headX : headX) + (turn? -bikeR : bikeR);
-					wx = r*Math.cos(a);
-					wy = r*Math.sin(a);
-					canv.translate(wx, wy);
-
-					canv.save(); // head
-						canv.translate(-15.5/48, -42/48);
-						canv.scale(23/48, 23/48);
-						lgr.head.draw(canv);
-					canv.restore();
-
-					var bumx = 19.5/48, bumy = 0;
-					var pedalx = -wx + 10.2/48/3, pedaly = -wy + 65/48/3;
-					legLimb(canv, lgr.q1thigh, bumx, bumy, lgr.q1leg, pedalx, pedaly);
-
-					canv.save(); // torso
-						canv.translate(17/48, 9.25/48);
-						canv.rotate(Math.PI + 2/3);
-						canv.scale(100/48/3, 58/48/3);
-						if(shirt && shirt.touch()){
-							// assumes shirts are rotated as on EOL site
-							canv.translate(0.5, 0.5);
-							canv.rotate(Math.PI/2);
-							canv.translate(-0.5, -0.5);
-							shirt.draw(canv);
-						}else
-							lgr.q1body.draw(canv);
-					canv.restore();
-
-					var shoulderx = 0/48, shouldery = -17.5/48;
-					var handlex = -wx - 64.5/48/3, handley = -wy - 59.6/48/3;
-					var handx = handlex, handy = handley;
-
-					var animx = shoulderx, animy = shouldery;
-					if(animpos > 0){
-						var dangle, ascale;
-						if(lv[1] == turn){
-							if(animpos >= 0.25)
-								animpos = 0.25 - 0.25*(animpos - 0.25)/0.75;
-							dangle = 10.8*animpos;
-							ascale = 1 - 1.2*animpos;
-						}else{
-							if(animpos >= 0.2)
-								animpos = 0.2 - 0.2*(animpos - 0.2)/0.8;
-							dangle = -8*animpos;
-							ascale = 1 + 0.75*animpos;
-						}
-						var at = Math.atan2(handley - animy, handlex - animx) + dangle;
-						var dist = ascale*hypot(handley - animy, handlex - animx);
-						handx = animx + dist*Math.cos(at);
-						handy = animy + dist*Math.sin(at);
-					}
-
-					armLimb(canv, lgr.q1up_arm, shoulderx, shouldery, lgr.q1forarm, handx, handy);
-				canv.restore();
-			canv.restore();
-
-			if(turnpos != 0 && turnpos <= 0.5)
-				wheel(canv, lgr, backX, backY, backR);
-			if(turnpos > 0.5)
-				wheel(canv, lgr, frontX, frontY, frontR);
-		canv.restore();
-	}
-
-	return {
-		draw: draw,
-		bikeXi: bikeXi,
-		bikeYi: bikeYi
-	};
-};
-
-
-/***/ }),
-/* 12 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var geom = __webpack_require__(10);
-
-exports.renderer = function objRender(levReader, recReader){
-	var appleCount = 0;
-
-	var objs = function(){
-		var flowers = [], apples = [], killers = [], starts = [];
-
-		function fl(x, y){
-			flowers.push({ type: "fl", pos: [x, y] });
-		}
-
-		function ap(x, y, grav, anim){
-			appleCount++;
-			apples.push({ type: "ap", pos: [x, y], grav: grav, anim: anim });
-		}
-
-		function ki(x, y){
-			killers.push({ type: "ki", pos: [x, y] });
-		}
-
-		function st(x, y){
-			starts.push({ type: "st", pos: [x, y] });
-		}
-
-		// TODO: handle errors
-		var count = levReader.objCount()
-		for(var x = 0; x < count; x++)
-			levReader.obj(x, fl, ap, ki, st);
-
-		return [].concat(killers, apples, flowers, starts);
-	}();
-
-	var applesTaken = [];
-	var gravityChanges = [];
-	void function(){
-		for(var rec = 0, recR = recReader; recR; recR = recR.next, rec++){
-			var count = recR.eventCount();
-			var gravC = [];
-			for(var x = 0; x < count; x++)
-				recR.event(x, function(time, info, type){
-					if(type == 0) // TODO: check it's actually there?
-						if(objs.length > info && objs[info].type == "ap" && !("taken" in objs[info])){ // TODO: maybe track gravity here?
-							var frame = time/.01456;
-							objs[info].taken = frame;
-							applesTaken.push([frame, rec]);
-							if(objs[info].grav > 0)
-								gravC.push([frame, ["up", "down", "left", "right"][objs[info].grav - 1]]);
-						}
-				});
-			gravityChanges.push(gravC);
-		}
-		applesTaken.sort(function(a, b){
-			return (a[0] > b[0]) - (a[0] < b[0]);
-		});
-	}();
-
-	return {
-		appleCount: function(){
-			return appleCount;
-		},
-
-		applesTaken: function(frame, rec){
-			for(var x = 0; x < applesTaken.length; x++)
-				if(applesTaken[x][0] >= frame)
-					break;
-			return x;
-		},
-
-		gravity: function(frame, rec){
-			var gravC = gravityChanges[rec];
-			if(gravC.length == 0) // returns empty string if gravity is default for whole rec
-				return "";
-			for(var x = 0; x < gravC.length; x++)
-				if(gravC[x][0] >= frame)
-					break;
-			return x? gravC[x - 1][1] : "down";
-		},
-
-		draw: function(canv, lgr, frame, x, y, w, h, scale){
-			canv.save();
-				canv.scale(scale, scale);
-				canv.translate(-x, -y);
-
-				for(var z = 0; z < objs.length; z++){
-					canv.save();
-						canv.translate(objs[z].pos[0], objs[z].pos[1]);
-						canv.scale(40/48, 40/48);
-						canv.translate(-0.5, -0.5);
-						switch(objs[z].type){
-							case "ap":
-								if("taken" in objs[z] && objs[z].taken <= frame)
-									break;
-								if(objs[z].anim)
-									lgr.qfood2.frame(canv, frame%51, 51);
-								else
-									lgr.qfood1.frame(canv, frame%34, 34);
-								break;
-							case "fl":
-								lgr.qexit.frame(canv, frame%50, 50);
-								break;
-							case "ki":
-								lgr.qkiller.frame(canv, frame%33, 33);
-								break;
-						}
-					canv.restore();
-				}
-			canv.restore();
-		}
-	};
-};
-
-
-/***/ })
-/******/ ]);
+},{"./geom":12}]},{},[1]);
