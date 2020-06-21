@@ -57,12 +57,16 @@ exports.renderer = function objRender(levReader, recReader){
 		});
 	}();
 
+	var isAppleTaken = recReader && recReader.isAppleTaken || function(frame, id){
+		return "taken" in objs[id] && objs[id].taken <= frame;
+	};
+
 	return {
 		appleCount: function(){
 			return appleCount;
 		},
 
-		applesTaken: function(frame, rec){
+		applesTaken: recReader && recReader.applesTaken || function(frame){
 			for(var x = 0; x < applesTaken.length; x++)
 				if(applesTaken[x][0] >= frame)
 					break;
@@ -91,7 +95,7 @@ exports.renderer = function objRender(levReader, recReader){
 						canv.translate(-0.5, -0.5);
 						switch(objs[z].type){
 							case "ap":
-								if("taken" in objs[z] && objs[z].taken <= frame)
+								if(isAppleTaken(frame, z))
 									break;
 								if(objs[z].anim)
 									lgr["qfood2"].frame(canv, frame%51, 51);
