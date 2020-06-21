@@ -170,6 +170,7 @@ exports.make = function(levName, imagesPath, elem, document){
 	return function(cont){
 		var canvase = mkCanv(600, 480);
 		var canvas = canvase.getContext("2d");
+		var stopDraw = false;
 		elem.appendChild(canvase);
 		get.get(levName, function(lev){
 			var pllgr = lgr.make(imagesPath, function(){
@@ -208,7 +209,11 @@ exports.make = function(levName, imagesPath, elem, document){
 				pl.draw(canvas, 0, 0, canvase.width, canvase.height, true);
 			}
 
-			loop(draw);
+			setTimeout(function(){
+				if(!stopDraw)
+					loop(draw);
+				stopDraw = true;
+			}, 0);
 
 			function rect(){
 				return canvase.getBoundingClientRect();
@@ -313,7 +318,17 @@ exports.make = function(levName, imagesPath, elem, document){
 
 				player: function(){
 					return pl;
-				}
+				},
+
+				// NOTE: this function needs to be called
+				// immediately in `cont`
+				stopDraw: function(){
+					if(stopDraw)
+						throw new Error("Must be called immediately");
+					stopDraw = true;
+				},
+
+				draw: draw
 			});
 		});
 	};
@@ -1349,12 +1364,16 @@ exports.renderer = function objRender(levReader, recReader){
 		});
 	}();
 
+	var isAppleTaken = recReader && recReader.isAppleTaken || function(frame, id){
+		return "taken" in objs[id] && objs[id].taken <= frame;
+	};
+
 	return {
 		appleCount: function(){
 			return appleCount;
 		},
 
-		applesTaken: function(frame, rec){
+		applesTaken: recReader && recReader.applesTaken || function(frame){
 			for(var x = 0; x < applesTaken.length; x++)
 				if(applesTaken[x][0] >= frame)
 					break;
@@ -1383,7 +1402,7 @@ exports.renderer = function objRender(levReader, recReader){
 						canv.translate(-0.5, -0.5);
 						switch(objs[z].type){
 							case "ap":
-								if("taken" in objs[z] && objs[z].taken <= frame)
+								if(isAppleTaken(frame, z))
 									break;
 								if(objs[z].anim)
 									lgr["qfood2"].frame(canv, frame%51, 51);
