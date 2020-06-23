@@ -1,42 +1,50 @@
-"use strict";
+// NOTE: these aliases aren't significant to the compiler, but might be somewhat documentational
+export type Float64 = number;
+export type Float32 = number;
+export type Word32 = number;
+export type Word16 = number;
+export type Word8 = number;
+export type Int32 = number;
+export type Int16 = number;
+export type Int8 = number;
 
-export function binReader(data: string){
+export function reader(data: string){
 	let pos = 0;
 
-	function end(){
+	function end(): boolean {
 		return pos >= data.length;
 	}
 
-	function seek(p: number){
+	function seek(p: number): void {
 		if(p > data.length)
 			throw new Error("out of range: " + p);
 		pos = p;
 	}
 
-	function byte(){
+	function byte(): Word8 {
 		if(pos >= data.length)
 			throw new Error("out of range");
 		return data.charCodeAt(pos++);
 	}
 
-	function unbyte(){
+	function unbyte(): Word8 {
 		if(pos < 0)
 			throw new Error("out of range");
 		return data.charCodeAt(pos--);
 	}
 
-	function seq(n: number){
+	function seq(n: number): string {
 		if(pos + n > data.length)
 			throw new Error("out of range");
 		pos += n;
 		return data.substr(pos - n, n);
 	}
 
-	function skip(n: number){
+	function skip(n: number): void {
 		pos += n;
 	}
 
-	function binFloat64le(){
+	function binFloat64le(): Float64 {
 		skip(7);
 		let b = unbyte();
 		const sign = b >> 7;
@@ -53,7 +61,7 @@ export function binReader(data: string){
 		return (sign? -1 : 1)*Math.pow(2, exp - 1023)*(1 + mant*Math.pow(2, -52));
 	}
 
-	function binFloat32le(){
+	function binFloat32le(): Float32 {
 		skip(3);
 		let b = unbyte();
 		const sign = b >> 7;
@@ -70,38 +78,38 @@ export function binReader(data: string){
 		return (sign? -1 : 1)*Math.pow(2, exp - 127)*(1 + mant*Math.pow(2, -23));
 	}
 
-	function word32le(){
+	function word32le(): Word32 {
 		return word16le() | word16le() << 16;
 	}
 
-	function word16le(){
+	function word16le(): Word16 {
 		return byte() | byte() << 8;
 	}
 
-	function int32le(){
+	function int32le(): Int32 {
 		const r = word32le();
 		return r > 1 << 31? r - (1 << 32) : r;
 	}
 
-	function int16le(){
+	function int16le(): Int16 {
 		const r = word16le();
 		return r > 1 << 15? r - (1 << 16) : r;
 	}
 
-	function int8(){
+	function int8(): Int8 {
 		const r = byte();
 		return r > 1 << 7? r - (1 << 8) : r;
 	}
 
-	function string(max: number){
+	function string(max: number): string {
 		if(max === undefined)
 			max = Infinity;
 		for(var n = 0; n < max && pos + n < data.length && data[pos + n] != "\u0000"; n++);
 		return seq(n);
 	}
 
-	function pstring(n: number){
-		var s = seq(n);
+	function pstring(n: number): string {
+		const s = seq(n);
 		return (n = s.indexOf("\u0000")) >= 0? s.substr(0, n) : s;
 	}
 
@@ -124,4 +132,4 @@ export function binReader(data: string){
 			return pos;
 		}
 	};
-};
+}
