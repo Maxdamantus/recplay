@@ -1,5 +1,3 @@
-"use strict";
-
 import * as bin from "./binReader";
 
 const ticker = function(): (size: number) => number {
