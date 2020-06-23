@@ -1,13 +1,13 @@
 "use strict";
 
-exports.reader = function binReader(data){
-	var pos = 0;
+export function binReader(data: string){
+	let pos = 0;
 
 	function end(){
 		return pos >= data.length;
 	}
 
-	function seek(p){
+	function seek(p: number){
 		if(p > data.length)
 			throw new Error("out of range: " + p);
 		pos = p;
@@ -25,28 +25,26 @@ exports.reader = function binReader(data){
 		return data.charCodeAt(pos--);
 	}
 
-	function seq(n){
+	function seq(n: number){
 		if(pos + n > data.length)
 			throw new Error("out of range");
 		pos += n;
 		return data.substr(pos - n, n);
 	}
 
-	function skip(n){
+	function skip(n: number){
 		pos += n;
 	}
 
 	function binFloat64le(){
-		var sign, exp, mant, b;
-
 		skip(7);
-		b = unbyte();
-		sign = b >> 7;
-		exp = b & 127;
+		let b = unbyte();
+		const sign = b >> 7;
+		let exp = b & 127;
 		b = unbyte();
 		exp <<= 4;
 		exp |= b >> 4;
-		mant = b & 15;
+		let mant = b & 15;
 		for(b = 0; b < 6; b++){
 			mant *= 1 << 8;
 			mant += unbyte();
@@ -56,16 +54,14 @@ exports.reader = function binReader(data){
 	}
 
 	function binFloat32le(){
-		var sign, exp, mant, b;
-
 		skip(3);
-		b = unbyte();
-		sign = b >> 7;
-		exp = b & 127;
+		let b = unbyte();
+		const sign = b >> 7;
+		let exp = b & 127;
 		b = unbyte();
 		exp <<= 1;
 		exp |= b >> 7;
-		mant = b & 127;
+		let mant = b & 127;
 		for(b = 0; b < 2; b++){
 			mant *= 1 << 8;
 			mant += unbyte();
@@ -83,29 +79,28 @@ exports.reader = function binReader(data){
 	}
 
 	function int32le(){
-		var r = word32le();
+		const r = word32le();
 		return r > 1 << 31? r - (1 << 32) : r;
 	}
 
 	function int16le(){
-		//console.log("0x" + pos.toString(16));
-		var r = word16le();
+		const r = word16le();
 		return r > 1 << 15? r - (1 << 16) : r;
 	}
 
 	function int8(){
-		var r = byte();
+		const r = byte();
 		return r > 1 << 7? r - (1 << 8) : r;
 	}
 
-	function string(max){
+	function string(max: number){
 		if(max === undefined)
 			max = Infinity;
 		for(var n = 0; n < max && pos + n < data.length && data[pos + n] != "\u0000"; n++);
 		return seq(n);
 	}
 
-	function pstring(n){
+	function pstring(n: number){
 		var s = seq(n);
 		return (n = s.indexOf("\u0000")) >= 0? s.substr(0, n) : s;
 	}
