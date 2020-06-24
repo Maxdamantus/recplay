@@ -17,7 +17,7 @@ const goffsFloat32s = ticker(0);
 
 export type EventFn<T> = (time: bin.Float64, info: bin.Word16, type: bin.Word8, _: bin.Word8, dunno: bin.Float32) => T;
 
-type RecReader = {
+export type RecReader = {
     frameCount: () => number;
     bikeX: (frame: number) => bin.Float32;
     bikeY: (frame: number) => bin.Float32;
@@ -39,6 +39,11 @@ type RecReader = {
         type: number;
         dunno: number;
     };
+
+    // NOTE: intended to be implemented by a "live" implementation
+    lastTurn?: (frame: number) => number;
+    lastVolt?: (frame: number) => [number, boolean] | null;
+
     next: RecReader | null;
 };
 
