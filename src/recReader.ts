@@ -43,6 +43,8 @@ export type RecReader = {
     // NOTE: intended to be implemented by a "live" implementation
     lastTurn?: (frame: number) => number;
     lastVolt?: (frame: number) => [number, boolean] | null;
+    applesTaken?(frame: number): number;
+    isAppleTaken?(frame: number, id: number): boolean;
 
     next: RecReader | null;
 };

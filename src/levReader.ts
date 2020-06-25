@@ -27,7 +27,7 @@ type AppleFn<T> = (vx: number, vy: number, grav: Gravity, anim: number) => T;
 
 type PicFn<T> = (picture: string, texture: string, mask: string, vx: number, vy: number, dist: number, clipping: Clipping) => T;
 
-const enum Gravity {
+export const enum Gravity {
 	None = 0, Up = 1, Down = 2, Left = 3, Right = 4
 }
 
@@ -41,7 +41,33 @@ type Obj =
 	{ type: "killer", x: number, y: number } |
 	{ type: "start", x: number, y: number };
 
-export function reader(data: string){
+export type LevReader = {
+    rightType: () => boolean;
+    ident: () => string;
+    integrities: () => number[];
+    desc: () => string;
+    lgr: () => string;
+    ground: () => string;
+    sky: () => string;
+    polyCount: () => number;
+    objCount: () => number;
+    picCount: () => number;
+    polyReader: (forEachPoly: PolyFn) => void;
+    obj: <T>(n: number, onFlower: ObjFn<T>, onApple: AppleFn<T>, onKiller: ObjFn<T>, onStart: ObjFn<T>) => T;
+    obj_: (n: number) => Obj;
+    pic: <T>(n: number, onPic: PicFn<T>) => T;
+    pic_: (n: number) => {
+        picture: string;
+        texture: string;
+        mask: string;
+        x: number;
+        y: number;
+        dist: number;
+        clipping: Clipping;
+    };
+};
+
+export function reader(data: string): LevReader {
 	const br = bin.reader(data);
 
 	function polyCount(): number {

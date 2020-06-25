@@ -1,5 +1,3 @@
-import * as levReader from "./levReader";
-
 type Canv = CanvasRenderingContext2D;
 type MkCanv = (width: number, height: number) => HTMLCanvasElement;
 type MkImage = () => HTMLImageElement;
