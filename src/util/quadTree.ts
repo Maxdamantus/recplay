@@ -21,7 +21,7 @@ const nil: Node<never> = { type: "nil", v: undefined };
 
 type ValFn<T> = (x: number, y: number, val: T) => void;
 
-type Tree<T> = {
+export type Tree<T> = {
     add(valx: number, valy: number, val: T): void;
     traverse(x: number, y: number, w: number, h: number, fn: ValFn<T>): void;
     dbgdraw(canv: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void;
