@@ -1,46 +1,53 @@
-"use strict";
+import * as levRn from "./levReader";
+import * as recRn from "./recReader";
+import * as get from "./get";
+import * as lgr from "./lgr";
+import * as player from "./player";
 
-var levRn = require("./levReader");
-var recRn = require("./recReader");
-var get = require("./get");
-var lgr = require("./lgr");
-var player = require("./player");
+export type MkCanv = (width: number, height: number) => HTMLCanvasElement;
 
-exports.make = function(levName, imagesPath, elem, document){
-	var createElement = "createElementNS" in document?
-		function(tag){
-			return document.createElementNS("http://www.w3.org/1999/xhtml", tag);
-		} : function(tag){
-			return document.createElement(tag);
-		};
+export type Controller = {
+	loadReplay(recName: string, shirts: (string | null)[]): void;
+	loadLevel(levName: string, cont?: () => void): void;
+	resize(wd: number, ht: number): void;
+	player(): player.Player;
+	stopDraw(): void;
+	draw(): void;
+};
 
-	function mkCanv(w, h){
-		var o = createElement("canvas");
+export function make(levName: string, imagesPath: string, elem: HTMLElement, document: Document){
+	const createElement = document.createElementNS?
+		((tag: string) => document.createElementNS("http://www.w3.org/1999/xhtml", tag)) :
+		((tag: string) => document.createElement(tag));
+
+	const mkCanv: MkCanv = (w, h) => {
+		const o = createElement("canvas") as HTMLCanvasElement;
 		o.width = w;
 		o.height = h;
 		return o;
-	}
+	};
 
-	return function(cont){
-		var canvase = mkCanv(600, 480);
-		var canvas = canvase.getContext("2d");
-		var stopDraw = false;
+	return (cont: (controller: Controller) => void) => {
+		const canvase = mkCanv(600, 480);
+		const canvas = canvase.getContext("2d");
+		let stopDraw = false;
 		elem.appendChild(canvase);
 		get.get(levName, function(lev){
-			var pllgr = lgr.make(imagesPath, function(){
-				return createElement("img");
-			}, mkCanv);
-			var pl = player.make(levRn.reader(lev), pllgr, mkCanv);
-			window.pl = pl; // just so it's accessible in the console
+			const pllgr = lgr.make(imagesPath, () => createElement("img") as HTMLImageElement, mkCanv);
+			const pl = player.make(levRn.reader(lev), pllgr, mkCanv);
+			(window as any)["pl"] = pl; // just so it's accessible in the console
 
-			function listener(e){
-				var kc = e.keyCode, result;
+			function listener(e: KeyboardEvent){
+				const kc = e.keyCode;
+				let result: string;
 				if(!e.ctrlKey && !e.metaKey && !e.altKey && kc >= "A".charCodeAt(0) && kc <= "Z".charCodeAt(0))
-					result = String.fromCharCode(kc + (!e.shiftKey)*32);
-				else
-					result = { 219: "[", 221: "]", 8: "backspace", 32: "space", 37: "left", 38: "up", 39: "right", 40: "down" }[kc];
+					result = String.fromCharCode(kc + (e.shiftKey? 0 : 32));
+				else{
+					const fromCode: { [code: string]: string } =
+						{ "219": "[", "221": "]", "8": "backspace", "32": "space", "37": "left", "38": "up", "39": "right", "40": "down" };
+					result = fromCode[String(kc)];
+				}
 				if(result !== undefined){
-					console.log(result);
 					if(pl.inputKey(result))
 						e.preventDefault();
 				}
@@ -49,18 +56,18 @@ exports.make = function(levName, imagesPath, elem, document){
 			canvase.setAttribute("tabindex", "0");
 			canvase.addEventListener("keydown", listener, true);
 		
-			var loop = typeof requestAnimationFrame != "undefined"? function(fn){
+			const loop = typeof requestAnimationFrame != "undefined"? function(fn: () => void){
 				void function go(){
 					requestAnimationFrame(go);
 					fn();
 				}();
-			} : function(fn){
+			} : function(fn: () => void){
 				var fps = 30;
 				setInterval(fn, 1000/fps);
 			};
 
 			function draw(){
-				pl.draw(canvas, 0, 0, canvase.width, canvase.height, true);
+				pl.draw(canvas!, 0, 0, canvase.width, canvase.height, true);
 			}
 
 			setTimeout(function(){
@@ -74,16 +81,16 @@ exports.make = function(levName, imagesPath, elem, document){
 			}
 
 			canvase.addEventListener("click", function(e){
-				var r = rect();
+				const r = rect();
 				pl.inputClick(e.clientX - r.left, e.clientY - r.top, canvase.width, canvase.height);
 				e.preventDefault();
 			});
 
 			canvase.addEventListener("mousedown", function(e){
-				var r = rect();
-				var cont = pl.inputDrag(e.clientX - r.left, e.clientY - r.top, canvase.width, canvase.height);
+				const r = rect();
+				const cont = pl.inputDrag(e.clientX - r.left, e.clientY - r.top, canvase.width, canvase.height);
 
-				function onmousemove(e){
+				function onmousemove(e: MouseEvent){
 					cont.update(e.clientX - r.left, e.clientY - r.top);
 					e.preventDefault();
 				}
@@ -101,19 +108,19 @@ exports.make = function(levName, imagesPath, elem, document){
 			});
 
 			canvase.addEventListener("touchstart", function ontouchstart(e){
-				var ts = e.changedTouches;
-				var r = rect();
+				const ts = e.changedTouches;
+				const r = rect();
 
 				if(ts.length < 1)
 					return;
 				e.preventDefault();
 
-				var cont = pl.inputDrag(ts[0].clientX - r.left, ts[0].clientY - r.top, canvase.width, canvase.height);
+				const cont = pl.inputDrag(ts[0].clientX - r.left, ts[0].clientY - r.top, canvase.width, canvase.height);
 
-				var isClick = true;
+				let isClick = true;
 
-				function ontouchmove(e){
-					var ts = e.changedTouches;
+				function ontouchmove(e: TouchEvent){
+					const ts = e.changedTouches;
 					if(ts.length < 1)
 						return;
 					isClick = false;
@@ -140,7 +147,7 @@ exports.make = function(levName, imagesPath, elem, document){
 				canvase.removeEventListener("touchstart", ontouchstart);
 			});
 
-			canvase.addEventListener("wheel", function(e){
+			canvase.addEventListener("wheel", function(e: WheelEvent){
 				var r = rect();
 				var delta = e.deltaMode == WheelEvent.DOM_DELTA_LINE? 53/3*e.deltaY : e.deltaY;
 				pl.inputWheel(e.clientX - r.left, e.clientY - r.top, canvase.width, canvase.height, delta);
@@ -148,7 +155,7 @@ exports.make = function(levName, imagesPath, elem, document){
 			});
 
 			cont({
-				loadReplay: function(recName, shirts){
+				loadReplay(recName, shirts){
 					get.get(recName, function(rec){
 						pl.addReplay(recRn.reader(rec), !shirts? [] : shirts.map(function(s){
 							return s == null? null : pllgr.lazy(s);
@@ -156,7 +163,7 @@ exports.make = function(levName, imagesPath, elem, document){
 					});
 				},
 
-				loadLevel: function(levName, cont){
+				loadLevel(levName, cont){
 					get.get(levName, function(lev){
 						pl.changeLevel(levRn.reader(lev));
 						if(cont)
@@ -164,25 +171,25 @@ exports.make = function(levName, imagesPath, elem, document){
 					});
 				},
 
-				resize: function(wd, ht){
+				resize(wd, ht){
 					canvase.width = wd;
 					canvase.height = ht;
 					pl.invalidate();
 				},
 
-				player: function(){
+				player(){
 					return pl;
 				},
 
 				// NOTE: this function needs to be called
 				// immediately in `cont`
-				stopDraw: function(){
+				stopDraw(){
 					if(stopDraw)
 						throw new Error("Must be called immediately");
 					stopDraw = true;
 				},
 
-				draw: draw
+				draw
 			});
 		});
 	};

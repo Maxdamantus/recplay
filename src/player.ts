@@ -375,7 +375,7 @@ export function make(levRd: levReader.LevReader, lgr: lgr.Lgr, makeCanvas: MkCan
 		},
 
 		// shirts should be created by lgr.lazy
-		addReplay(recRd: recReader.RecReader | null, shirts: lgr.Pict[]): void {
+		addReplay(recRd: recReader.RecReader | null, shirts: (lgr.Pict | null)[]): void {
 			if(replays.length == 0){
 				lastFrame = 0;
 				setRef();
