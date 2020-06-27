@@ -17,7 +17,6 @@ function pad(n: number, s: string): string {
 }
 
 type Canv = CanvasRenderingContext2D;
-type MkCanv = (width: number, height: number) => HTMLCanvasElement;
 
 export type Player = typeof make extends (...a: any[]) => infer T? T : never;
 
@@ -50,7 +49,7 @@ type Opts = {
 	customBackgroundSky?: boolean;
 };
 
-export function make(levRd: levReader.LevReader, lgr: lgr.Lgr, makeCanvas: MkCanv){
+export function make(levRd: levReader.LevReader, lgr: lgr.Lgr, makeCanvas: lgr.MkCanv){
 	let replays: Replay[] = [], levRn: levRnd.LevRenderer = null!;
 	let lastFrame = 0;
 	let refFrame = 0, refTime = 0;

@@ -4,8 +4,6 @@ import * as get from "./get";
 import * as lgr from "./lgr";
 import * as player from "./player";
 
-export type MkCanv = (width: number, height: number) => HTMLCanvasElement;
-
 export type Controller = {
 	loadReplay(recName: string, shirts: (string | null)[]): void;
 	loadLevel(levName: string, cont?: () => void): void;
@@ -20,7 +18,7 @@ export function make(levName: string, imagesPath: string, elem: HTMLElement, doc
 		((tag: string) => document.createElementNS("http://www.w3.org/1999/xhtml", tag)) :
 		((tag: string) => document.createElement(tag));
 
-	const mkCanv: MkCanv = (w, h) => {
+	const mkCanv: lgr.MkCanv = (w, h) => {
 		const o = createElement("canvas") as HTMLCanvasElement;
 		o.width = w;
 		o.height = h;

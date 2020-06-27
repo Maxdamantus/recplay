@@ -8,8 +8,8 @@ function hypot(a: number, b: number): number {
 	return Math.sqrt(a*a + b*b);
 }
 
+type MkCanv = lgr.MkCanv;
 type Canv = CanvasRenderingContext2D;
-type MkCanv = (width: number, height: number) => HTMLCanvasElement;
 
 export type LevRendererDraw = (canv: Canv, x: number, y: number, w: number, h: number, scale: number) => void;
 

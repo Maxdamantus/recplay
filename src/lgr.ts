@@ -1,5 +1,5 @@
 type Canv = CanvasRenderingContext2D;
-type MkCanv = (width: number, height: number) => HTMLCanvasElement;
+export type MkCanv = (width: number, height: number) => HTMLCanvasElement;
 type MkImage = () => HTMLImageElement;
 
 export type Clipping = "s" | "g" | "u" | "";
