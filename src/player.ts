@@ -1,43 +1,78 @@
-"use strict";
+import * as levRnd from "./levRender";
+import * as recRnd from "./recRender";
+import * as objRnd from "./objRender";
+import * as levReader from "./levReader";
+import * as recReader from "./recReader";
+import * as lgr from "./lgr";
 
-var levRnd = require("./levRender");
-var recRnd = require("./recRender");
-var objRnd = require("./objRender");
-
-function signum(n){
+function signum(n: number): -1 | 0 | 1 {
 	return n < 0? -1 : n > 0? 1 : 0;
 }
 
-function pad(n, s){
+function pad(n: number, s: string): string {
 	s = String(s);
 	while(s.length < n)
 		s = "0" + s;
 	return s;
 }
 
-exports.make = function(levRd, lgr, makeCanvas){
-	var replays, levRn;
-	var lastFrame;
-	var refFrame, refTime;
-	var invalidate;
+type Canv = CanvasRenderingContext2D;
+type MkCanv = (width: number, height: number) => HTMLCanvasElement;
 
-	var viewports;
+export type Player = typeof make extends (...a: any[]) => infer T? T : never;
 
-	var focus; // whether focus is on replays[0]
+type Replay = {
+	frameCount: number;
+	objRn: objRnd.ObjRenderer;
+	subs: ReplaySub[];
+};
 
-	var playing;
+type ReplaySub = {
+	rd: recReader.RecReader;
+	rn: recRnd.RecRenderer;
+	shirt: lgr.Pict | null;
+};
 
-	var startX, startY;
+type Viewport = {
+	offsX: number;
+	offsY: number;
+	levRn: levRnd.LevRendererDraw;
+};
 
-	var zoom; // scale = 0.8^zoom, of Elma units, where 1 Elma unit is 48 px
-	var speed; // where 1 is normal speed, -1 is reversed
+type DragContinuer = {
+	update(cx: number, cy: number): void;
+	end(): void;
+};
 
-	var defaultObjRn; // for when not spying
+type Opts = {
+	grass?: boolean;
+	pictures?: boolean;
+	customBackgroundSky?: boolean;
+};
+
+export function make(levRd: levReader.LevReader, lgr: lgr.Lgr, makeCanvas: MkCanv){
+	let replays: Replay[] = [], levRn: levRnd.LevRenderer = null!;
+	let lastFrame = 0;
+	let refFrame = 0, refTime = 0;
+	let invalidate = true;
+
+	let viewports: Viewport[] = [];
+
+	let focus = true; // whether focus is on replays[0]
+
+	let playing = true;
+
+	let startX = 0, startY = 0;
+
+	let zoom = 0; // scale = 0.8^zoom, of Elma units, where 1 Elma unit is 48 px
+	let speed = 1; // where 1 is normal speed, -1 is reversed
+
+	let defaultObjRn: objRnd.ObjRenderer = null!; // for when not spying
 
 	// levRender options; makes sense to persist these
-	var optGrass = true;
-	var optPictures = true;
-	var optCustomBackgroundSky = true;
+	let optGrass = true;
+	let optPictures = true;
+	let optCustomBackgroundSky = true;
 
 	reset();
 
@@ -55,21 +90,21 @@ exports.make = function(levRd, lgr, makeCanvas){
 		playing = true;
 
 		startX = 0; startY = 0;
-		void function(){
-			function nvm(){}
+		{
+			const nvm = () => {};
 
-			var l = levRd.objCount();
-			for(var x = 0; x < l; x++)
+			const l = levRd.objCount();
+			for(let x = 0; x < l; x++)
 				levRd.obj(x, nvm, nvm, nvm, function(x, y){
 					startX = x;
 					startY = y;
 				});
-		}();
+		}
 
 		zoom = 0;
 		speed = 1;
 
-		defaultObjRn = objRnd.renderer(levRd);
+		defaultObjRn = objRnd.renderer(levRd, null);
 	}
 
 	function updateLevOpts(){
@@ -78,7 +113,7 @@ exports.make = function(levRd, lgr, makeCanvas){
 		levRn.setCustomBackgroundSky(optCustomBackgroundSky);
 	}
 
-	function getViewport(n){
+	function getViewport(n: number): Viewport {
 		if(!viewports[n])
 			viewports[n] = {
 				offsX: 0, offsY: 0,
@@ -95,90 +130,87 @@ exports.make = function(levRd, lgr, makeCanvas){
 		invalidate = true;
 	}
 
-	function calcFrameCount(){
+	function calcFrameCount(): number {
 		if(replays.length == 0)
 			return 60*30; // animate objects for a minute
-		return replays.map(function(rp){
+		return replays.map(rp => {
 			return rp.frameCount;
-		}).reduce(function(a, b){
+		}).reduce((a, b) => {
 			return Math.max(a, b);
 		}, 0) + 30;
 	}
 
-	var frameCount = calcFrameCount();
+	let frameCount = calcFrameCount();
 
-	function setSpeed(n){
+	function setSpeed(n: number): void {
 		if(n == 0)
 			return;
 		setRef();
-		console.log(n);
-		return speed = n;
+		speed = n;
 	}
 
-	function setScale(n){
+	function setScale(n: number): void {
 		if(n == 0)
 			return;
 		setZoom(Math.log(n)/Math.log(0.8));
-		return n;
 	}
 
-	function setZoom(n){
+	function setZoom(n: number): void {
 		zoom = n;
 		setRef();
-		console.log(n);
-		return zoom = n;
+		zoom = n;
 	}
 
-	function getScale(){
+	function getScale(): number {
 		return Math.pow(0.8, zoom);
 	}
 
-	var dragging = false;
+	let dragging = false;
 
 	// (w, h), size of canvas
-	function inputClick(x, y, w, h){
+	function inputClick(x: number, y: number, w: number, h: number){
 		if(dragging)
 			dragging = false;
 		else
 			changeFocus();
 	}
 
-	function inputWheel(x, y, w, h, delta){
+	function inputWheel(x: number, y: number, w: number, h: number, delta: number){
 		// was planning on making it zoom around the cursor, but
 		// .. what if there are multiple viewports?
 		setZoom(zoom + signum(delta));
 	}
 
-	function inputDrag(x, y, w, h){
+	function inputDrag(x: number, y: number, w: number, h: number): DragContinuer {
 		if(y < 12 && replays.length > 0)
 			return dragSeek(x, y, w, h);
 		return dragPosition(x, y, w, h);
 	}
 
-	function dragPosition(x, y, w, h){
-		var vp = focus && replays.length > 0?
+	function dragPosition(x: number, y: number, w: number, h: number): DragContinuer {
+		const vp = focus && replays.length > 0?
 			getViewport(Math.floor(y/h*replays[0].subs.length)) :
 			getViewport(0);
 
-		var firstOx = vp.offsX, firstOy = vp.offsY;
+		const firstOx = vp.offsX, firstOy = vp.offsY;
 
 		return {
-			update: function(cx, cy){
+			update(cx, cy){
 				dragging = true;
 				invalidate = true;
 				vp.offsX = firstOx - (cx - x)/(48*getScale());
 				vp.offsY = firstOy - (cy - y)/(48*getScale());
 			},
 
-			end: function(){}
+			end(){}
 		};
 	}
 
-	function dragSeek(x, y, w, h){
-		var firstPlaying = playing;
+	function dragSeek(x: number, y: number, w: number, h: number): DragContinuer {
+		const firstPlaying = playing;
 		playing = false;
 
-		function update(cx, cy){
+		function update(cx: number, cy: number){
 			dragging = true;
 			if(replays.length == 0)
 				return;
@@ -193,9 +225,9 @@ exports.make = function(levRd, lgr, makeCanvas){
 		update(x, y);
 
 		return {
-			update: update,
+			update,
 
-			end: function(){
+			end(){
 				playing = firstPlaying;
 				setRef();
 			}
@@ -205,8 +237,8 @@ exports.make = function(levRd, lgr, makeCanvas){
 	function changeFocus(){
 		invalidate = true;
 		if(replays.length > 0)
-			replays.unshift(replays.pop());
-		for(var z = 0; z < viewports.length; z++)
+			replays.unshift(replays.pop()!);
+		for(let z = 0; z < viewports.length; z++)
 			viewports[z].offsX = viewports[z].offsY = 0;
 	}
 
@@ -215,7 +247,7 @@ exports.make = function(levRd, lgr, makeCanvas){
 		setRef();
 	}
 
-	function arrow(str){
+	function arrow(str: string): string {
 		if(str == "up") return "\u2191";
 		if(str == "down") return "\u2193";
 		if(str == "left") return "\u2190";
@@ -223,12 +255,12 @@ exports.make = function(levRd, lgr, makeCanvas){
 		return "";
 	}
 
-	function eround(n){
-		var escale = 48*getScale();
+	function eround(n: number): number {
+		const escale = 48*getScale();
 		return Math.round(n*escale)/escale;
 	}
 
-	function drawViewport(vp, canv, x, y, w, h, frame, topRec){
+	function drawViewport(vp: Viewport, canv: Canv, x: number, y: number, w: number, h: number, frame: number, topRec: ReplaySub | null): void {
 		canv.save();
 			canv.translate(x, y);
 			canv.beginPath();
@@ -238,9 +270,9 @@ exports.make = function(levRd, lgr, makeCanvas){
 			canv.lineTo(0, h);
 			canv.clip();
 
-			var centreX = vp.offsX, centreY = vp.offsY;
+			let centreX = vp.offsX, centreY = vp.offsY;
 			if(topRec){
-				var lf = Math.min(frame, topRec.rd.frameCount() - 1);
+				const lf = Math.min(frame, topRec.rd.frameCount() - 1);
 				centreX += topRec.rn.bikeXi(lf);
 				centreY -= topRec.rn.bikeYi(lf);
 			}else{
@@ -248,9 +280,9 @@ exports.make = function(levRd, lgr, makeCanvas){
 				centreY += startY;
 			}
 
-			var escale = 48*getScale();
-			var ex = eround(centreX - w/escale/2), ey = eround(centreY - h/escale/2);
-			var ew = eround(w/escale), eh = eround(h/escale);
+			const escale = 48*getScale();
+			const ex = eround(centreX - w/escale/2), ey = eround(centreY - h/escale/2);
+			const ew = eround(w/escale), eh = eround(h/escale);
 
 			levRn.drawSky(canv, ex, ey, ew, eh, escale);
 			vp.levRn(canv, ex, ey, ew, eh, escale);
@@ -258,9 +290,9 @@ exports.make = function(levRd, lgr, makeCanvas){
 				replays[0].objRn.draw(canv, lgr, Math.min(frame, replays[0].frameCount - 1), ex, ey, ew, eh, escale);
 			else
 				defaultObjRn.draw(canv, lgr, frame, ex, ey, ew, eh, escale);
-			for(var z = replays.length - 1; z >= 0; z--){
-				for(var zx = replays[z].subs.length - 1; zx >= 0; zx--){
-					var rec = replays[z].subs[zx];
+			for(let z = replays.length - 1; z >= 0; z--){
+				for(let zx = replays[z].subs.length - 1; zx >= 0; zx--){
+					let rec = replays[z].subs[zx];
 					if(rec != topRec) // object identity
 						rec.rn.draw(canv, lgr, rec.shirt, Math.min(frame, rec.rd.frameCount() - 1), ex, ey, escale);
 				}
@@ -270,7 +302,7 @@ exports.make = function(levRd, lgr, makeCanvas){
 		canv.restore();
 	}
 
-	function drawFrame(canv, x, y, w, h, frame){
+	function drawFrame(canv: Canv, x: number, y: number, w: number, h: number, frame: number): void {
 		x = Math.floor(x); y = Math.floor(y);
 		w = Math.floor(w); h = Math.floor(h);
 		canv.save();
@@ -286,15 +318,15 @@ exports.make = function(levRd, lgr, makeCanvas){
 			canv.fillRect(0, 0, w, h);
 
 			if(focus && replays.length > 0){
-				var vph = Math.floor(h/replays[0].subs.length);
+				const vph = Math.floor(h/replays[0].subs.length);
 				// the last viewport gets an extra pixel when h%2 == .subs.length%2
 				for(var z = 0; z < replays[0].subs.length; z++)
-					drawViewport(getViewport(z), canv, 0, z*vph, w, vph - (z < replays[0].subs.length - 1), frame, replays[0].subs[z]);
-				var t = Math.floor(Math.min(frame, replays[0].frameCount - 1)*100/30);
+					drawViewport(getViewport(z), canv, 0, z*vph, w, vph - (z < replays[0].subs.length - 1? 1 : 0), frame, replays[0].subs[z]);
+				let t = Math.floor(Math.min(frame, replays[0].frameCount - 1)*100/30);
 				canv.font = "14px monospace";
 				canv.fillStyle = "yellow";
-				var csec = pad(2, t%100); t = Math.floor(t/100);
-				var sec = pad(2, t%60); t = Math.floor(t/60);
+				const csec = pad(2, String(t%100)); t = Math.floor(t/100);
+				const sec = pad(2, String(t%60)); t = Math.floor(t/60);
 				canv.fillText(t + ":" + sec + "." + csec, 10, 12*2);
 				canv.fillText(replays[0].objRn.applesTaken(frame) + "/" + replays[0].objRn.appleCount(), 10, 12*3);
 //				canv.fillText(arrow(replays[0].objRn.gravity(frame, 0)), 10, 12*4);
@@ -306,29 +338,32 @@ exports.make = function(levRd, lgr, makeCanvas){
 	};
 
 	return {
-		changeLevel: function(levRd_){
+		changeLevel(levRd_: levReader.LevReader){
 			levRd = levRd_;
 			reset();
 		},
 
-		reset: reset,
+		reset,
 
-		getLevel: function(){
+		getLevel(){
 			return levRd;
 		},
 
-		drawFrame: drawFrame,
+		drawFrame,
 
-		draw: function(canv, x, y, w, h, onlyMaybe){
-			var curFrame = refFrame + playing*(Date.now() - refTime)*speed*30/1000;
+		draw(canv: Canv, x: number, y: number, w: number, h: number, onlyMaybe: boolean): void {
+			let curFrame = refFrame;
+			const now = Date.now();
+			if(playing)
+				curFrame += (now - refTime)*speed*30/1000;
 			if(replays.length > 0){
 				while(frameCount && curFrame >= frameCount){
 					curFrame = refFrame = curFrame - frameCount;
-					refTime = Date.now();
+					refTime = now;
 				}
 				while(frameCount && curFrame < 0){
 					curFrame = refFrame = frameCount + curFrame;
-					refTime = Date.now();
+					refTime = now;
 				}
 			}
 
@@ -340,57 +375,62 @@ exports.make = function(levRd, lgr, makeCanvas){
 		},
 
 		// shirts should be created by lgr.lazy
-		addReplay: function(recRd, shirts){
+		addReplay(recRd: recReader.RecReader | null, shirts: lgr.Pict[]): void {
 			if(replays.length == 0){
 				lastFrame = 0;
 				setRef();
 			}
-			var replay = { objRn: objRnd.renderer(levRd, recRd), subs: [] };
+			const objRn = objRnd.renderer(levRd, recRd);
+			const subs: ReplaySub[] = [];
 			while(recRd){
-				replay.subs.push({ rd: recRd, rn: recRnd.renderer(recRd), objRn: objRnd.renderer(levRd, recRd), shirt: shirts[0] || null });
+				subs.push({ rd: recRd, rn: recRnd.renderer(recRd), shirt: shirts[0] || null });
 				recRd = recRd.next;
 				shirts = shirts.slice(1);
 			}
-			replay.frameCount = replay.subs.reduce(function(a, b){
-				return Math.max(a, b.rd.frameCount());
-			}, 0);
+			const replay: Replay = {
+				objRn,
+				subs,
+				frameCount: subs.reduce((a, b) => {
+					return Math.max(a, b.rd.frameCount());
+				}, 0)
+			};
 			replays.push(replay);
 			frameCount = calcFrameCount();
 			invalidate = true;
 		},
 
-		changeFocus: changeFocus,
+		changeFocus,
 
-		setSpeed: setSpeed,
-		setScale: setScale,
-		setZoom: setZoom,
-		speed: function(){ return speed; },
+		setSpeed,
+		setScale,
+		setZoom,
+		speed(){ return speed; },
 		// scale is deprecated, should prefer to use zoom instead
-		scale: function(){ return getScale(); },
-		zoom: function(){ return zoom; },
+		scale(){ return getScale(); },
+		zoom(){ return zoom; },
 
-		setLevOpts: function(o){
-			if("grass" in o)
+		setLevOpts(o: Opts){
+			if(o.grass != undefined)
 				optGrass = o.grass;
-			if("pictures" in o)
+			if(o.pictures != undefined)
 				optPictures = o.pictures;
-			if("customBackgroundSky" in o)
+			if(o.customBackgroundSky != undefined)
 				optCustomBackgroundSky = o.customBackgroundSky;
 			updateLevOpts();
 		},
 
-		setFrame: function(s){
+		setFrame(s: number){
 			lastFrame = s;
 			setRef();
 		},
-		frame: function(){
+		frame(){
 			return lastFrame; // TODO: this is a hack
 		},
 
-		playPause: playPause,
-		playing: function(){ return playing; },
+		playPause,
+		playing(){ return playing; },
 
-		inputKey: function(key){
+		inputKey(key: string){
 			switch(key){
 				case "space":
 					playPause();
@@ -414,7 +454,7 @@ exports.make = function(levRd, lgr, makeCanvas){
 					setSpeed(-speed);
 					break;
 				case "p":
-					var val = !optCustomBackgroundSky;
+					const val = !optCustomBackgroundSky;
 					optPictures = optCustomBackgroundSky = val;
 					updateLevOpts();
 					break;
@@ -440,12 +480,12 @@ exports.make = function(levRd, lgr, makeCanvas){
 			return true;
 		},
 
-		inputClick: inputClick,
-		inputDrag: inputDrag,
-		inputWheel: inputWheel,
+		inputClick,
+		inputDrag,
+		inputWheel,
 
-		invalidate: function(){
+		invalidate(){
 			invalidate = true;
 		}
 	};
-};
+}

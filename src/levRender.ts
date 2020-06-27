@@ -11,9 +11,11 @@ function hypot(a: number, b: number): number {
 type Canv = CanvasRenderingContext2D;
 type MkCanv = (width: number, height: number) => HTMLCanvasElement;
 
-type LevRenderer = {
-    draw: (canv: Canv, x: number, y: number, w: number, h: number, scale: number) => void;
-    cached: (num: number, mkCanv: MkCanv) => (canv: Canv, x: number, y: number, w: number, h: number, scale: number) => void;
+export type LevRendererDraw = (canv: Canv, x: number, y: number, w: number, h: number, scale: number) => void;
+
+export type LevRenderer = {
+    draw: LevRendererDraw;
+    cached: (num: number, mkCanv: MkCanv) => LevRendererDraw;
     setGrass: (v: boolean) => void;
     setPictures: (v: boolean) => void;
     setCustomBackgroundSky: (v: boolean) => void;

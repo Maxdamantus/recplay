@@ -18,7 +18,7 @@ export type ObjRenderer = {
     draw(canv: CanvasRenderingContext2D, lgr: lgr.Lgr, frame: number, x: number, y: number, w: number, h: number, scale: number): void;
 };
 
-export function renderer(levReader: levReader.LevReader, recReader: recReader.RecReader): ObjRenderer {
+export function renderer(levReader: levReader.LevReader, recReader: recReader.RecReader | null): ObjRenderer {
 	let appleCount = 0;
 
 	const objs = function(){
@@ -48,8 +48,7 @@ export function renderer(levReader: levReader.LevReader, recReader: recReader.Re
 	const applesTaken: [number, number][] = [];
 	const gravityChanges: [number, Gravity][][] = [];
 	{
-		type RecR = recReader.RecReader | null;
-		for(let rec = 0, recR: RecR = recReader; recR; recR = recR.next, rec++){
+		for(let rec = 0, recR = recReader; recR; recR = recR.next, rec++){
 			const count = recR.eventCount();
 			const gravC: [number, Gravity][] = [];
 			for(let x = 0; x < count; x++)

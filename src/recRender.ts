@@ -1,13 +1,10 @@
+import * as lgr from "./lgr";
 import { RecReader } from "./recReader";
 
 type Canv = CanvasRenderingContext2D;
 
-// TODO: refer to LGR types
-type Lgr = { [pict: string]: Image };
-type Image = {
-	draw(canv: Canv): void;
-	touch(): boolean;
-};
+type Lgr = lgr.Lgr;
+type Image = lgr.Pict;
 
 function hypot(a: number, b: number){
 	return Math.sqrt(a*a + b*b);
@@ -98,7 +95,7 @@ const armLimb = limb(true, {
 });
 
 export type RecRenderer = {
-	draw(canv: Canv, lgr: Lgr, shirt: Image, frame: number, x: number, y: number, scale: number): void;
+	draw(canv: Canv, lgr: Lgr, shirt: Image | null, frame: number, x: number, y: number, scale: number): void;
 	bikeXi(frame: number): number;
 	bikeYi(frame: number): number;
 };
@@ -208,7 +205,7 @@ export function renderer(reader: RecReader): RecRenderer {
 
 	// (x, y): top left in Elma coordinates
 	// arguably a microoptimisation, but it doesn't produce any objects in the JS world
-	function draw(canv: Canv, lgr: Lgr, shirt: Image, frame: number, x: number, y: number, scale: number){
+	function draw(canv: Canv, lgr: Lgr, shirt: Image | null, frame: number, x: number, y: number, scale: number){
 		canv.save();
 			canv.translate(/*Math.ceil*/(scale*(-x + bikeXi(frame))), /*Math.ceil*/(scale*(-y - bikeYi(frame))));
 			canv.scale(scale, scale);
