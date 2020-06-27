@@ -11,6 +11,8 @@ function hypot(a: number, b: number): number {
 type MkCanv = lgr.MkCanv;
 type Canv = CanvasRenderingContext2D;
 
+export type Bounds = { minX: number, minY: number, maxX: number, maxY: number };
+
 export type LevRendererDraw = (canv: Canv, x: number, y: number, w: number, h: number, scale: number) => void;
 
 export type LevRenderer = {
@@ -20,6 +22,7 @@ export type LevRenderer = {
     setPictures: (v: boolean) => void;
     setCustomBackgroundSky: (v: boolean) => void;
     drawSky: (canv: Canv, x: number, y: number, w: number, h: number, scale: number) => void;
+    bounds: () => Bounds;
 };
 
 type TreeNode = {
@@ -532,6 +535,7 @@ export function renderer(reader: levReader.LevReader, lgr: lgr.Lgr): LevRenderer
 				canv.translate(-x, 0);
 				img.repeat(canv, w + img.width, h);
 			canv.restore();
-		}
+		},
+		bounds: () => ({ minX, minY, maxX, maxY })
 	};
 }

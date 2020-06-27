@@ -36,6 +36,7 @@ type Viewport = {
 	offsX: number;
 	offsY: number;
 	levRn: levRnd.LevRendererDraw;
+	scaleFac: number;
 };
 
 type DragContinuer = {
@@ -73,6 +74,8 @@ export function make(levRd: levReader.LevReader, lgr: lgr.Lgr, makeCanvas: lgr.M
 	let optPictures = true;
 	let optCustomBackgroundSky = true;
 
+	let bounds: levRnd.Bounds | null = null;
+
 	reset();
 
 	function reset(){
@@ -103,6 +106,8 @@ export function make(levRd: levReader.LevReader, lgr: lgr.Lgr, makeCanvas: lgr.M
 		zoom = 0;
 		speed = 1;
 
+		bounds = null;
+
 		defaultObjRn = objRnd.renderer(levRd, null);
 	}
 
@@ -118,7 +123,8 @@ export function make(levRd: levReader.LevReader, lgr: lgr.Lgr, makeCanvas: lgr.M
 				offsX: 0, offsY: 0,
 				// hack! Firefox seems to perform a lot better without the cache
 				// suspect it has to do with the offscreen antialiasing it's doing
-				levRn: levRn.cached(4, makeCanvas)
+				levRn: levRn.cached(4, makeCanvas),
+				scaleFac: 1
 			};
 		return viewports[n];
 	}
@@ -193,12 +199,14 @@ export function make(levRd: levReader.LevReader, lgr: lgr.Lgr, makeCanvas: lgr.M
 
 		const firstOx = vp.offsX, firstOy = vp.offsY;
 
+		console.log(vp.scaleFac, 48*getScale());
+
 		return {
 			update(cx, cy){
 				dragging = true;
 				invalidate = true;
-				vp.offsX = firstOx - (cx - x)/(48*getScale());
-				vp.offsY = firstOy - (cy - y)/(48*getScale());
+				vp.offsX = firstOx - (cx - x)/(vp.scaleFac*48*getScale());
+				vp.offsY = firstOy - (cy - y)/(vp.scaleFac*48*getScale());
 			},
 
 			end(){}
@@ -234,9 +242,28 @@ export function make(levRd: levReader.LevReader, lgr: lgr.Lgr, makeCanvas: lgr.M
 	}
 
 	function changeFocus(){
+		focus = true;
+		bounds = null;
 		invalidate = true;
 		if(replays.length > 0)
 			replays.unshift(replays.pop()!);
+		resetViewports();
+	}
+
+	function unfocus(){
+		focus = false;
+		invalidate = true;
+		resetViewports();
+	}
+
+	function fitLev(){
+		bounds = levRn.bounds();
+		setScale(1);
+		invalidate = true;
+		resetViewports();
+	}
+
+	function resetViewports(){
 		for(let z = 0; z < viewports.length; z++)
 			viewports[z].offsX = viewports[z].offsY = 0;
 	}
@@ -270,16 +297,24 @@ export function make(levRd: levReader.LevReader, lgr: lgr.Lgr, makeCanvas: lgr.M
 			canv.clip();
 
 			let centreX = vp.offsX, centreY = vp.offsY;
-			if(topRec){
+			if(bounds != null){
+				centreX += (bounds.maxX + bounds.minX)/2;
+				centreY += (bounds.maxY + bounds.minY)/2;
+				const bw = bounds.maxX - bounds.minX;
+				const bh = bounds.maxY - bounds.minY;
+				vp.scaleFac = Math.min(w/bw, h/bh)/48;
+			}else if(topRec){
 				const lf = Math.min(frame, topRec.rd.frameCount() - 1);
 				centreX += topRec.rn.bikeXi(lf);
 				centreY -= topRec.rn.bikeYi(lf);
+				vp.scaleFac = 1;
 			}else{
 				centreX += startX;
 				centreY += startY;
+				vp.scaleFac = 1;
 			}
 
-			const escale = 48*getScale();
+			const escale = vp.scaleFac*48*getScale();
 			const ex = eround(centreX - w/escale/2), ey = eround(centreY - h/escale/2);
 			const ew = eround(w/escale), eh = eround(h/escale);
 
@@ -399,6 +434,8 @@ export function make(levRd: levReader.LevReader, lgr: lgr.Lgr, makeCanvas: lgr.M
 		},
 
 		changeFocus,
+		unfocus,
+		fitLev,
 
 		setSpeed,
 		setScale,
@@ -442,6 +479,9 @@ export function make(levRd: levReader.LevReader, lgr: lgr.Lgr, makeCanvas: lgr.M
 					break;
 				case "backspace":
 					setSpeed(signum(speed));
+					break;
+				case "f":
+					fitLev();
 					break;
 				case "w":
 					setZoom(zoom + 1);
