@@ -67,10 +67,10 @@ export function reader(data: string){
 		const frameCount = br.word32le();
 
 		const gticker = function(){
-			var offs = offsFloat32s;
+			let offs = offsFloat32s;
 
 			return function<T>(size: number, count: number, reader: () => T){
-				var offs_ = offs;
+				const offs_ = offs;
 				offs += size*count*frameCount;
 				return function(n: number){
 					return function(frame: number){

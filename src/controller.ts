@@ -60,7 +60,7 @@ export function make(levName: string, imagesPath: string, elem: HTMLElement, doc
 					fn();
 				}();
 			} : function(fn: () => void){
-				var fps = 30;
+				const fps = 30;
 				setInterval(fn, 1000/fps);
 			};
 
@@ -146,8 +146,8 @@ export function make(levName: string, imagesPath: string, elem: HTMLElement, doc
 			});
 
 			canvase.addEventListener("wheel", function(e: WheelEvent){
-				var r = rect();
-				var delta = e.deltaMode == WheelEvent.DOM_DELTA_LINE? 53/3*e.deltaY : e.deltaY;
+				const r = rect();
+				const delta = e.deltaMode == WheelEvent.DOM_DELTA_LINE? 53/3*e.deltaY : e.deltaY;
 				pl.inputWheel(e.clientX - r.left, e.clientY - r.top, canvase.width, canvase.height, delta);
 				e.preventDefault();
 			});

@@ -25,8 +25,8 @@ export function renderer(levReader: levReader.LevReader, recReader: recReader.Re
 		const flowers: Obj[] = [], apples: Obj[] = [], killers: Obj[] = [], starts: Obj[] = [];
 
 		// TODO: handle errors
-		var count = levReader.objCount()
-		for(var x = 0; x < count; x++)
+		const count = levReader.objCount()
+		for(let x = 0; x < count; x++)
 			levReader.obj(
 				x,
 				(x, y) => { flowers.push({ type: "fl", pos: [x, y] }); },

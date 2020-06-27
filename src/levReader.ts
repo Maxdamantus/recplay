@@ -86,7 +86,7 @@ export function reader(data: string): LevReader {
 	}
 
 	const offsObjCount = function(){
-		var pc = polyCount();
+		const pc = polyCount();
 		br.seek(offsPolys);
 		for(let x = 0; x < pc; x++){
 			br.skip(4); // grass
@@ -136,8 +136,8 @@ export function reader(data: string): LevReader {
 
 		integrities: function(){
 			br.seek(offsIntegrities);
-			var o = [];
-			for(var x = 0; x < 4; x++)
+			const o = [];
+			for(let x = 0; x < 4; x++)
 				o.push(br.binFloat64le());
 			return o;
 		},
