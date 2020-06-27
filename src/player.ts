@@ -319,7 +319,7 @@ export function make(levRd: levReader.LevReader, lgr: lgr.Lgr, makeCanvas: lgr.M
 			if(focus && replays.length > 0){
 				const vph = Math.floor(h/replays[0].subs.length);
 				// the last viewport gets an extra pixel when h%2 == .subs.length%2
-				for(var z = 0; z < replays[0].subs.length; z++)
+				for(let z = 0; z < replays[0].subs.length; z++)
 					drawViewport(getViewport(z), canv, 0, z*vph, w, vph - (z < replays[0].subs.length - 1? 1 : 0), frame, replays[0].subs[z]);
 				let t = Math.floor(Math.min(frame, replays[0].frameCount - 1)*100/30);
 				canv.font = "14px monospace";

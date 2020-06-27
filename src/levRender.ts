@@ -127,7 +127,7 @@ export function renderer(reader: levReader.LevReader, lgr: lgr.Lgr): LevRenderer
 			maxImgW = maxImgH = 0;
 
 			const count = reader.picCount();
-			for(var x = 0; x < count; x++){
+			for(let x = 0; x < count; x++){
 				const pic = reader.pic_(x);
 				setNum(pic, x);
 				// TODO: defaults?
@@ -182,10 +182,10 @@ export function renderer(reader: levReader.LevReader, lgr: lgr.Lgr): LevRenderer
 					if(maxX != (maxX = Math.max(maxX, poly[z][0])))
 						maxXi = z;
 				}
-				var maxW = 0;
+				let maxW = 0;
 				for(let z = minXi; z%poly.length != maxXi; z++)
 					maxW = Math.max(maxW, Math.abs(poly[z%poly.length][0] - poly[(z + 1)%poly.length][0]));
-				var dir = -1;
+				let dir = -1;
 				for(let z = poly.length + minXi; z%poly.length != maxXi; z--)
 					if(maxW != (maxW = Math.max(maxW, Math.abs(poly[z%poly.length][0] - poly[(z - 1)%poly.length][0]))))
 						dir = 1;
@@ -193,7 +193,7 @@ export function renderer(reader: levReader.LevReader, lgr: lgr.Lgr): LevRenderer
 					for(let z = poly.length + minXi; z%poly.length != maxXi; z += dir){
 						const from = poly[z%poly.length], to = poly[(z + dir)%poly.length];
 						if(from[0] <= x && x < to[0]){
-							var m = (to[1] - from[1])/(to[0] - from[0]);
+							const m = (to[1] - from[1])/(to[0] - from[0]);
 							return m*(x - from[0]) + from[1];
 						}
 					}
@@ -440,7 +440,7 @@ export function renderer(reader: levReader.LevReader, lgr: lgr.Lgr): LevRenderer
 		let cscale = 1, xp = 0, yp = 0, wp = 0, hp = 0;
 		let canvs: HTMLCanvasElement[] = [];
 		let cacheLgrIdent: any = null;
-		var cacheOptIdent: any = null;
+		let cacheOptIdent: any = null;
 
 		function update(which: number, canv: HTMLCanvasElement){
 			let x = which%num, y = Math.floor(which/num);

@@ -104,7 +104,8 @@ export function reader(data: string){
 	function string(max: number): string {
 		if(max === undefined)
 			max = Infinity;
-		for(var n = 0; n < max && pos + n < data.length && data[pos + n] != "\u0000"; n++);
+		let n;
+		for(n = 0; n < max && pos + n < data.length && data[pos + n] != "\u0000"; n++);
 		return seq(n);
 	}
 
