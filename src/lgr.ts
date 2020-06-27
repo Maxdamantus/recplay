@@ -1,7 +1,11 @@
-"use strict";
+type Canv = CanvasRenderingContext2D;
+export type MkCanv = (width: number, height: number) => HTMLCanvasElement;
+type MkImage = () => HTMLImageElement;
 
-var imgs = ["bike", "ground", "head", "sky", "susp1", "susp2", "wheel", "qfood1", "qfood2", "qkiller", "qexit", "q1body", "q1forarm", "q1leg", "q1thigh", "q1up_arm", "myshirt"];
-var picts = [
+export type Clipping = "s" | "g" | "u" | "";
+
+const imgs = { bike: "bike", ground: "ground", head: "head", sky: "sky", susp1: "susp1", susp2: "susp2", wheel: "wheel", qfood1: "qfood1", qfood2: "qfood2", qkiller: "qkiller", qexit: "qexit", q1body: "q1body", q1forarm: "q1forarm", q1leg: "q1leg", q1thigh: "q1thigh", q1up_arm: "q1up_arm", myshirt: "myshirt" };
+const picts: [string, string, number | undefined, Clipping][] = [
 	["qgrass","text",400,"s"],
 	["qdown_1","pict",400,"s"],
 	["qdown_14","pict",400,"s"],
@@ -55,7 +59,7 @@ var picts = [
 	["suspup","pict",380,"u"],
 	["susp","pict",380,"u"]];
 
-function loading(canv){
+function loading(canv: Canv){
 	canv.save();
 		canv.lineWidth = 1/20;
 		canv.strokeStyle = "red";
@@ -69,42 +73,64 @@ function loading(canv){
 	canv.restore();
 }
 
-function borders(mkCanv, img, up){
-	var canve = mkCanv(img.width, img.height);
-	var canv = canve.getContext("2d");
+function borders(mkCanv: MkCanv, img: Pict, up: boolean): number[] {
+	const canve = mkCanv(img.width, img.height);
+	const canv = canve.getContext("2d")!;
 	img.drawAt(canv);
-	var data;
-	try{
-		data = canv.getImageData(0, 0, img.width, img.height).data;
-	}catch(e){
-		console.log(e);
-	}
-	var o = [];
+	const data = canv.getImageData(0, 0, img.width, img.height).data;
+	const o = [];
 	if(data)
-		for(var x = 0; x < img.width; x++){
-			for(var y = 0; y < img.height && data[4*(y*img.width + x) + 3] == 0; y++);
+		for(let x = 0; x < img.width; x++){
+			let y;
+			for(y = 0; y < img.height && data[4*(y*img.width + x) + 3] == 0; y++);
 			o.push(y);
 		}
 	else{
-		var diff = img.height - 41;
-		var from = img.height/2 + (up? 1 : -1)*diff/2;
-		var to = img.height/2 + (up? -1 : 1)*diff/2;
-		for(var x = 0; x < img.width; x++)
+		const diff = img.height - 41;
+		const from = img.height/2 + (up? 1 : -1)*diff/2;
+		const to = img.height/2 + (up? -1 : 1)*diff/2;
+		for(let x = 0; x < img.width; x++)
 			o.push(from + (to - from)*(x/img.width));
 	}
 	return o;
 }
 
-exports.make = function(path, mkImage, mkCanv){
-	var r = { _ident: {}, picts: {}, lazy: lazy };
+type LgrImgs = { [ImgName in keyof typeof imgs]: Pict };
+type LgrPicts = { [name: string]: Pict };
 
-	var numLoading = 0;
-	var listeners = [];
+// TODO: consider not using an intersection with `LgrImgs`
+export type Lgr = {
+	_ident: {};
+	picts: LgrPicts;
+	lazy(path: string, onLoad?: (pict: Pict) => void): Pict;
+	whenLoaded(cb: () => void): void;
+	grassUp(): Pict[];
+	grassDown(): Pict[];
+} & LgrImgs;
+
+export type Pict = {
+	name: string | null;
+	touch(): boolean;
+	width: number;
+	height: number;
+	draw(canv: Canv): void;
+	drawAt(canv: Canv): void;
+	repeat(canv: Canv, w: number, h: number): void;
+	frame(canv: Canv, frame: number, frameCount: number): void;
+	borders?: number[];
+	type?: string;
+	dist?: number;
+	clipping?: Clipping;
+};
+
+export function make(path: string, mkImage: MkImage, mkCanv: MkCanv): Lgr {
+	let numLoading = 0;
+	let listeners: (() => void)[] = [];
 
 	function allLoaded(){
-		var ls = listeners;
+		const ls = listeners;
 		listeners = [];
-		ls.forEach(function(f){
+		ls.forEach(f => {
 			f();
 		});
 	}
@@ -112,19 +138,20 @@ exports.make = function(path, mkImage, mkCanv){
 	// will call the given function the next time there are no images loading
 	// optimally, should be called after trying to render a frame, so it's known
 	//   that all required images are ready on the second render
-	r.whenLoaded = function(l){
+	function whenLoaded(l: () => void){
 		if(numLoading > 0)
 			listeners.push(l);
 		else
 			l();
 	};
 
-	function lazy(path, cont){
+	function lazy(path: string, cont?: (pict: Pict) => void): Pict {
 		return lazy_(path, null, cont);
 	}
 
-	function lazy_(path, name, cont){
-		var loaded = false, img, pict;
+	function lazy_(path: string, name: string | null, cont?: (pict: Pict) => void): Pict {
+		let loaded = false;
+		let img: HTMLImageElement = null!;
 
 		function ondone(){
 			r._ident = {};
@@ -139,7 +166,7 @@ exports.make = function(path, mkImage, mkCanv){
 				++numLoading;
 				img = mkImage();
 				img.src = path;
-				img.onload = function(){
+				img.onload = () => {
 					loaded = true;
 					pict.width = img.width;
 					pict.height = img.height;
@@ -151,21 +178,21 @@ exports.make = function(path, mkImage, mkCanv){
 			return loaded;
 		}
 
-		return pict = {
+		const pict: Pict = {
 			name: name,
 
 			touch: requested,
 
 			width: 48, height: 48,
 
-			draw: function(canv){
+			draw(canv){
 				if(requested())
 					canv.drawImage(img, 0, 0, 1, 1);
 				else
 					loading(canv);
 			},
 
-			drawAt: function(canv){
+			drawAt(canv){
 				if(requested())
 					canv.drawImage(img, 0, 0);
 				else{
@@ -176,9 +203,9 @@ exports.make = function(path, mkImage, mkCanv){
 				}
 			},
 
-			repeat: function(canv, w, h){
+			repeat(canv, w, h){
 				if(requested()){
-					canv.fillStyle = canv.createPattern(img, "repeat");
+					canv.fillStyle = canv.createPattern(img, "repeat")!;
 					canv.fillRect(0, 0, w, h);
 				}else{
 					canv.save();
@@ -186,11 +213,11 @@ exports.make = function(path, mkImage, mkCanv){
 						canv.fillRect(0, 0, w, h);
 						canv.beginPath();
 						canv.strokeStyle = "white";
-						for(var x = 0; x <= w; x += 20){
+						for(let x = 0; x <= w; x += 20){
 							canv.moveTo(x, 0);
 							canv.lineTo(x, h);
 						}
-						for(var y = 0; y <= h; y += 20){
+						for(let y = 0; y <= h; y += 20){
 							canv.moveTo(0, y);
 							canv.lineTo(w, y);
 						}
@@ -199,10 +226,10 @@ exports.make = function(path, mkImage, mkCanv){
 				}
 			},
 
-			frame: function(canv, num, of){
+			frame(canv, num, of){
 				if(requested()){
 					num = Math.floor(num);
-					var wdPer = img.width/of;
+					const wdPer = img.width/of;
 					canv.drawImage(img, num*wdPer, 0, wdPer, img.height, 0, 0, 1, 1);
 				}else{
 					canv.save();
@@ -214,61 +241,73 @@ exports.make = function(path, mkImage, mkCanv){
 				}
 			}
 		};
+
+		return pict;
 	}
 
-	imgs.forEach(function(i){
-		r[i] = lazy_(path + "/" + i + ".png", i);
-	});
+	const lgrImgs = {} as LgrImgs;
+	for(const i_ in imgs){
+		const i = i_ as keyof typeof imgs;
+		lgrImgs[i] = lazy_(path + "/" + imgs[i] + ".png", i);
+	}
 
-	var grassUp = [], grassDown = [], grassUpCount = 0, grassDownCount = 0;
+	const grassUp: Pict[] = [], grassDown: Pict[] = [];
+	let grassUpCount = 0, grassDownCount = 0;
 
-	picts.forEach(function(info){
-		var add;
-		var i = info[0];
+	const lgrPicts = {} as LgrPicts;
+	picts.forEach(info => {
+		let add: ((g: Pict) => void) | undefined = undefined;
+		const [i, type, dist, clipping] = info;
 		if(i.indexOf("qup_") == 0){
 			grassUpCount++;
-			add = function(g){
+			add = g => {
 				g.borders = borders(mkCanv, g, true);
 				grassUp.push(g);
-				grassUp.sort(function(a, b){
-					return (a.name > b.name) - (a.name < b.name);
+				grassUp.sort((a, b) => {
+					return (a.name! > b.name!? 1 : 0) - (a.name! < b.name!? 1 : 0);
 				});
 			};
 		}
 		if(i.indexOf("qdown_") == 0){
 			grassDownCount++;
-			add = function(g){
+			add = g => {
 				g.borders = borders(mkCanv, g, false);
 				grassDown.push(g);
-				grassDown.sort(function(a, b){
-					return (a.name > b.name) - (a.name < b.name);
+				grassDown.sort((a, b) => {
+					return (a.name! > b.name!? 1 : 0) - (a.name! < b.name!? 1 : 0);
 				});
 			};
 		}
 
-		var img = r.picts[i] = lazy_(path + "/picts/" + i + ".png", i, add);
-		img.type = info[1];
-		img.dist = info[2];
-		img.clipping = info[3];
+		const img = lgrPicts[i] = lazy_(path + "/picts/" + i + ".png", i, add);
+		img.type = type;
+		img.dist = dist;
+		img.clipping = clipping;
 	});
 
-	r.grassUp = function(){
-		if(grassUp.length < grassUpCount)
-			picts.forEach(function(i){
-				if(i[0].indexOf("qup_") == 0)
-					r.picts[i[0]].touch();
-			});
-		return grassUp;
-	};
-
-	r.grassDown = function(){
-		if(grassDown.length < grassDownCount)
-			picts.forEach(function(i){
-				if(i[0].indexOf("qdown_") == 0)
-					r.picts[i[0]].touch();
-			});
-		return grassDown;
+	const r: Lgr = {
+		_ident: {},
+		picts: lgrPicts,
+		lazy,
+		whenLoaded,
+		grassUp(){
+			if(grassUp.length < grassUpCount)
+				picts.forEach(function(i){
+					if(i[0].indexOf("qup_") == 0)
+						r.picts[i[0]].touch();
+				});
+			return grassUp;
+		},
+		grassDown(){
+			if(grassDown.length < grassDownCount)
+				picts.forEach(function(i){
+					if(i[0].indexOf("qdown_") == 0)
+						r.picts[i[0]].touch();
+				});
+			return grassDown;
+		},
+		...lgrImgs
 	};
 
 	return r;
-};
+}

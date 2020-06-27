@@ -3,10 +3,11 @@
   "version": "0.0.0",
   "description": "Elasto Mania level/replay interpreter/renderer in JS/canvas",
   "devDependencies": {
-    "browserify": "^16.5.1"
+    "browserify": "^16.5.1",
+    "typescript": "^3.9.5"
   },
   "scripts": {
-    "amd-fake": "browserify amd-fake.js -o amd.js"
+    "amd-fake": "tsc && browserify lib/amd-fake.js -o amd.js"
   },
   "repository": {
     "type": "git",
