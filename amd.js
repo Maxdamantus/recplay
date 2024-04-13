@@ -138,14 +138,18 @@ var recRn = require("./recReader");
 var get = require("./get");
 var lgr = require("./lgr");
 var player = require("./player");
+function setCanvasSize(e, width, height) {
+    e.width = width;
+    e.height = height;
+    e.getContext("2d").imageSmoothingEnabled = false;
+}
 function make(levName, imagesPath, elem, document) {
     var createElement = document.createElementNS ?
         (function (tag) { return document.createElementNS("http://www.w3.org/1999/xhtml", tag); }) :
         (function (tag) { return document.createElement(tag); });
     var mkCanv = function (w, h) {
         var o = createElement("canvas");
-        o.width = w;
-        o.height = h;
+        setCanvasSize(o, w, h);
         return o;
     };
     return function (cont) {
@@ -269,8 +273,7 @@ function make(levName, imagesPath, elem, document) {
                     });
                 },
                 resize: function (wd, ht) {
-                    canvase.width = wd;
-                    canvase.height = ht;
+                    setCanvasSize(canvase, wd, ht);
                     pl.invalidate();
                 },
                 player: function () {
@@ -1132,14 +1135,16 @@ function make(path, mkImage, mkCanv) {
                     canv.restore();
                 }
             },
-            frame: function (canv, num, of) {
+            frame: function (canv, num, of, x, y, width, height) {
                 if (requested()) {
                     num = Math.floor(num);
                     var wdPer = img.width / of;
-                    canv.drawImage(img, num * wdPer, 0, wdPer, img.height, 0, 0, 1, 1);
+                    canv.drawImage(img, num * wdPer, 0, wdPer, img.height, x, y, width, height);
                 }
                 else {
                     canv.save();
+                    canv.translate(x, y);
+                    canv.scale(width, height);
                     canv.translate(0.5, 0.5);
                     canv.rotate(Math.PI * 2 * num / of);
                     canv.translate(-0.5, -0.5);
@@ -1288,34 +1293,28 @@ function renderer(levReader, recReader) {
             return x ? gravC[x - 1][1] : "down";
         },
         draw: function (canv, lgr, frame, x, y, w, h, scale) {
-            canv.save();
-            canv.scale(scale, scale);
-            canv.translate(-x, -y);
+            var pw = Math.round(scale * 40 / 48);
             for (var z = 0; z < objs.length; z++) {
                 var obj = objs[z];
-                canv.save();
-                canv.translate(objs[z].pos[0], objs[z].pos[1]);
-                canv.scale(40 / 48, 40 / 48);
-                canv.translate(-0.5, -0.5);
+                var px = Math.round(scale * (objs[z].pos[0] - x - 40 / 48 / 2));
+                var py = Math.round(scale * (objs[z].pos[1] - y - 40 / 48 / 2));
                 switch (obj.type) {
                     case "ap":
                         if (isAppleTaken(frame, z))
                             break;
                         if (obj.anim)
-                            lgr.qfood2.frame(canv, frame % 51, 51);
+                            lgr.qfood2.frame(canv, frame % 51, 51, px, py, pw, pw);
                         else
-                            lgr.qfood1.frame(canv, frame % 34, 34);
+                            lgr.qfood1.frame(canv, frame % 34, 34, px, py, pw, pw);
                         break;
                     case "fl":
-                        lgr.qexit.frame(canv, frame % 50, 50);
+                        lgr.qexit.frame(canv, frame % 50, 50, px, py, pw, pw);
                         break;
                     case "ki":
-                        lgr.qkiller.frame(canv, frame % 33, 33);
+                        lgr.qkiller.frame(canv, frame % 33, 33, px, py, pw, pw);
                         break;
                 }
-                canv.restore();
             }
-            canv.restore();
         }
     };
 }
