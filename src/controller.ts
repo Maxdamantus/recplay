@@ -13,6 +13,12 @@ export type Controller = {
 	draw(): void;
 };
 
+function setCanvasSize(e: HTMLCanvasElement, width: number, height: number) {
+	e.width = width;
+	e.height = height;
+	e.getContext("2d")!.imageSmoothingEnabled = false;
+}
+
 export function make(levName: string, imagesPath: string, elem: HTMLElement, document: Document){
 	const createElement = document.createElementNS?
 		((tag: string) => document.createElementNS("http://www.w3.org/1999/xhtml", tag)) :
@@ -20,8 +26,7 @@ export function make(levName: string, imagesPath: string, elem: HTMLElement, doc
 
 	const mkCanv: lgr.MkCanv = (w, h) => {
 		const o = createElement("canvas") as HTMLCanvasElement;
-		o.width = w;
-		o.height = h;
+		setCanvasSize(o, w, h);
 		return o;
 	};
 
@@ -170,8 +175,7 @@ export function make(levName: string, imagesPath: string, elem: HTMLElement, doc
 				},
 
 				resize(wd, ht){
-					canvase.width = wd;
-					canvase.height = ht;
+					setCanvasSize(canvase, wd, ht);
 					pl.invalidate();
 				},
 
