@@ -103,35 +103,28 @@ export function renderer(levReader: levReader.LevReader, recReader: recReader.Re
 		},
 
 		draw: function(canv, lgr, frame, x, y, w, h, scale){
-			canv.save();
-				canv.scale(scale, scale);
-				canv.translate(-x, -y);
-
-				for(let z = 0; z < objs.length; z++){
-					const obj = objs[z];
-					canv.save();
-						canv.translate(objs[z].pos[0], objs[z].pos[1]);
-						canv.scale(40/48, 40/48);
-						canv.translate(-0.5, -0.5);
-						switch(obj.type){
-							case "ap":
-								if(isAppleTaken(frame, z))
-									break;
-								if(obj.anim)
-									lgr.qfood2.frame(canv, frame%51, 51);
-								else
-									lgr.qfood1.frame(canv, frame%34, 34);
-								break;
-							case "fl":
-								lgr.qexit.frame(canv, frame%50, 50);
-								break;
-							case "ki":
-								lgr.qkiller.frame(canv, frame%33, 33);
-								break;
-						}
-					canv.restore();
+			const pw = Math.round(scale*40/48);
+			for(let z = 0; z < objs.length; z++){
+				const obj = objs[z];
+				const px = Math.round(scale*(objs[z].pos[0] - x - 40/48/2));
+				const py = Math.round(scale*(objs[z].pos[1] - y - 40/48/2));
+				switch(obj.type){
+					case "ap":
+						if(isAppleTaken(frame, z))
+							break;
+						if(obj.anim)
+							lgr.qfood2.frame(canv, frame%51, 51, px, py, pw, pw);
+						else
+							lgr.qfood1.frame(canv, frame%34, 34, px, py, pw, pw);
+						break;
+					case "fl":
+						lgr.qexit.frame(canv, frame%50, 50, px, py, pw, pw);
+						break;
+					case "ki":
+						lgr.qkiller.frame(canv, frame%33, 33, px, py, pw, pw);
+						break;
 				}
-			canv.restore();
+			}
 		}
 	};
 };

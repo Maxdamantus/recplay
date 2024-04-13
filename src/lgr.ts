@@ -116,7 +116,7 @@ export type Pict = {
 	draw(canv: Canv): void;
 	drawAt(canv: Canv): void;
 	repeat(canv: Canv, w: number, h: number): void;
-	frame(canv: Canv, frame: number, frameCount: number): void;
+	frame(canv: Canv, frame: number, frameCount: number, x: number, y: number, w: number, h: number): void;
 	borders?: number[];
 	type?: string;
 	dist?: number;
@@ -226,13 +226,15 @@ export function make(path: string, mkImage: MkImage, mkCanv: MkCanv): Lgr {
 				}
 			},
 
-			frame(canv, num, of){
+			frame(canv, num, of, x, y, width, height){
 				if(requested()){
 					num = Math.floor(num);
 					const wdPer = img.width/of;
-					canv.drawImage(img, num*wdPer, 0, wdPer, img.height, 0, 0, 1, 1);
+					canv.drawImage(img, num*wdPer, 0, wdPer, img.height, x, y, width, height);
 				}else{
 					canv.save();
+						canv.translate(x, y);
+						canv.scale(width, height);
 						canv.translate(0.5, 0.5);
 						canv.rotate(Math.PI*2*num/of);
 						canv.translate(-0.5, -0.5);
