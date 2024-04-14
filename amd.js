@@ -226,17 +226,43 @@ function make(levName, imagesPath, elem, document) {
                 if (ts.length < 1)
                     return;
                 e.preventDefault();
+                var primaryId = ts[0].identifier;
+                var lastPinchDistance = -1;
                 var cont = pl.inputDrag(ts[0].clientX - r.left, ts[0].clientY - r.top, canvase.width, canvase.height);
                 var isClick = true;
                 function ontouchmove(e) {
-                    var ts = e.changedTouches;
-                    if (ts.length < 1)
+                    if (e.changedTouches.length < 1)
                         return;
+                    var ts = e.touches;
                     isClick = false;
-                    cont.update(ts[0].clientX - r.left, ts[0].clientY - r.top);
+                    var hasPrimary = false;
+                    for (var x = 0; x < ts.length; x++) {
+                        var touch = e.touches[x];
+                        if (touch.identifier === primaryId) {
+                            hasPrimary = true;
+                            cont.update(touch.clientX - r.left, touch.clientY - r.top);
+                        }
+                    }
+                    var pinchDistance = ts.length >= 2 ?
+                        Math.hypot(ts[0].clientX - ts[1].clientX, ts[0].clientY - ts[1].clientY) :
+                        -1;
+                    if (pinchDistance !== -1 && lastPinchDistance !== -1) {
+                        var tx = (ts[0].clientX + ts[1].clientX) / 2;
+                        var ty = (ts[0].clientY + ts[1].clientY) / 2;
+                        pl.inputScale(tx - r.left, ty - r.top, canvase.width, canvase.height, pinchDistance / lastPinchDistance);
+                    }
+                    lastPinchDistance = pinchDistance;
+                    if (!hasPrimary) {
+                        // primary touch ended, just treat it as a new drag
+                        ontouchend(null);
+                        ontouchstart(e);
+                        return;
+                    }
                     e.preventDefault();
                 }
-                function ontouchend() {
+                function ontouchend(e) {
+                    if (e !== null && e.touches.length >= 1)
+                        return;
                     cont.end();
                     if (isClick)
                         pl.inputClick(ts[0].clientX - r.left, ts[0].clientY - r.top, canvase.width, canvase.height);
@@ -1445,6 +1471,11 @@ function make(levRd, lgr, makeCanvas) {
         // .. what if there are multiple viewports?
         setZoom(zoom + signum(delta));
     }
+    function inputScale(x, y, w, h, scale) {
+        // was planning on making it zoom around the cursor, but
+        // .. what if there are multiple viewports?
+        setScale(getScale() * scale);
+    }
     function inputDrag(x, y, w, h) {
         if (y < 12 && replays.length > 0)
             return dragSeek(x, y, w, h);
@@ -1754,6 +1785,7 @@ function make(levRd, lgr, makeCanvas) {
         inputClick: inputClick,
         inputDrag: inputDrag,
         inputWheel: inputWheel,
+        inputScale: inputScale,
         invalidate: function () {
             invalidate = true;
         }
