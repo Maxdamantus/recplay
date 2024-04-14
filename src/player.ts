@@ -186,6 +186,12 @@ export function make(levRd: levReader.LevReader, lgr: lgr.Lgr, makeCanvas: lgr.M
 		setZoom(zoom + signum(delta));
 	}
 
+	function inputScale(x: number, y: number, w: number, h: number, scale: number){
+		// was planning on making it zoom around the cursor, but
+		// .. what if there are multiple viewports?
+		setScale(getScale()*scale);
+	}
+
 	function inputDrag(x: number, y: number, w: number, h: number): DragContinuer {
 		if(y < 12 && replays.length > 0)
 			return dragSeek(x, y, w, h);
@@ -522,6 +528,7 @@ export function make(levRd: levReader.LevReader, lgr: lgr.Lgr, makeCanvas: lgr.M
 		inputClick,
 		inputDrag,
 		inputWheel,
+		inputScale,
 
 		invalidate(){
 			invalidate = true;

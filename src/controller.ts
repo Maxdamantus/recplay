@@ -118,20 +118,47 @@ export function make(levName: string, imagesPath: string, elem: HTMLElement, doc
 					return;
 				e.preventDefault();
 
+				let primaryId = ts[0].identifier;
+				let lastPinchDistance = -1;
+
 				const cont = pl.inputDrag(ts[0].clientX - r.left, ts[0].clientY - r.top, canvase.width, canvase.height);
 
 				let isClick = true;
 
 				function ontouchmove(e: TouchEvent){
-					const ts = e.changedTouches;
-					if(ts.length < 1)
+					if(e.changedTouches.length < 1)
 						return;
+					const ts = e.touches;
 					isClick = false;
-					cont.update(ts[0].clientX - r.left, ts[0].clientY - r.top);
+					let hasPrimary = false;
+					for(let x = 0; x < ts.length; x++){
+						const touch = e.touches[x];
+						if (touch.identifier === primaryId) {
+							hasPrimary = true;
+							cont.update(touch.clientX - r.left, touch.clientY - r.top);
+						}
+					}
+					const pinchDistance = ts.length >= 2?
+						Math.hypot(ts[0].clientX - ts[1].clientX, ts[0].clientY - ts[1].clientY) :
+						-1;
+					if(pinchDistance !== -1 && lastPinchDistance !== -1){
+						const tx = (ts[0].clientX + ts[1].clientX)/2;
+						const ty = (ts[0].clientY + ts[1].clientY)/2;
+						pl.inputScale(tx - r.left, ty - r.top, canvase.width, canvase.height, pinchDistance/lastPinchDistance);
+					}
+					lastPinchDistance = pinchDistance;
+					if(!hasPrimary) {
+						// primary touch ended, just treat it as a new drag
+						ontouchend(null);
+						(ontouchstart as any)(e);
+						return;
+					}
 					e.preventDefault();
 				}
 
-				function ontouchend(){
+				function ontouchend(e: TouchEvent | null){
+					if(e !== null && e.touches.length >= 1)
+						return;
 					cont.end();
 					if(isClick)
 						pl.inputClick(ts[0].clientX - r.left, ts[0].clientY - r.top, canvase.width, canvase.height);
