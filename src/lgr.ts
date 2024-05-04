@@ -4,7 +4,7 @@ type MkImage = () => HTMLImageElement;
 
 export type Clipping = "s" | "g" | "u" | "";
 
-const imgs = { bike: "bike", ground: "ground", head: "head", sky: "sky", susp1: "susp1", susp2: "susp2", wheel: "wheel", qfood1: "qfood1", qfood2: "qfood2", qkiller: "qkiller", qexit: "qexit", q1body: "q1body", q1forarm: "q1forarm", q1leg: "q1leg", q1thigh: "q1thigh", q1up_arm: "q1up_arm", myshirt: "myshirt" };
+const imgs = { bike: "bike", ground: "ground", head: "head", sky: "sky", susp1: "susp1", susp2: "susp2", wheel: "wheel", qfood1: "qfood1", qfood2: "qfood2", qkiller: "qkiller", qexit: "qexit", q1body: "q1body", q1forarm: "q1forarm", q1leg: "q1leg", q1thigh: "q1thigh", q1up_arm: "q1up_arm" };
 const picts: [string, string, number | undefined, Clipping][] = [
 	["qgrass","text",400,"s"],
 	["qdown_1","pict",400,"s"],
