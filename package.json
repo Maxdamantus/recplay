@@ -7,7 +7,9 @@
     "typescript": "^3.9.5"
   },
   "scripts": {
-    "amd-fake": "tsc && browserify lib/amd-fake.js -o amd.js"
+    "prepare": "npm run build",
+    "build": "tsc",
+    "amd-fake": "npm run build && browserify lib/amd-fake.js -o amd.js"
   },
   "repository": {
     "type": "git",
