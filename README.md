@@ -1,6 +1,6 @@
 # recplay
 
-This is a library for reading, rendering and playing Elasto Mania `.rec` and `.lev` files.
+This is a library for reading, rendering and playing Elasto Mania `.lev` and `.rec` files.
 
 Previous versions used source files implemented in AMD form (asynchronous module definition) with no necessary build process, and a basic "amd.js" loader was provided.
 
@@ -13,9 +13,15 @@ npm run amd-fake
 Correct rendering depends on various images that are normally part of an `.lgr` file. There should be a `gh-pages` branch in this repository with an `images` directory containing images derived from the `lgrdk10.zip` distribution of the LGR development kit. Note that these images however have a higher pixel depth (24-bit) than the ones used in the actual game (possibly 8-bit mapped?).
 
 # Basic usage
-Render level `stuff/chainpi3.lev` and play replay `stuff/chainpi3adi.rec`, assuming LGR images are accessible in the `images` directory.
+
+Install package from git repository:
+```sh
+npm install git+https://github.com/Maxdamantus/recplay
+```
+
+Render level `stuff/chainpi3.lev` and play replay `stuff/chainpi3adi.rec`, assuming LGR images are accessible in the `images` directory:
 ```ts
-import * as controller from "recplay/controller";
+import * as controller from "recplay/lib/controller";
 
 document.addEventListener("DOMContentLoaded", () => {
 	const target = document.body.appendChild(document.createElement("div"));
